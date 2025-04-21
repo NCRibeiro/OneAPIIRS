@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  ape-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ape-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      - PYTHONUNBUFFERED=1
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
