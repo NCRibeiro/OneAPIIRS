@@ -1,0 +1,29 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  security:
+    name: Run Burp Suite Security Scan
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker
+      uses: docker/setup-buildx-action@v3
+
+    - name: Build and run application (optional, se precisar levantar sua API primeiro)
+      run: |
+        docker-compose up -d
+
+    - name: Run security scan using Burp Suite
+      run: |
+        echo "Iniciando escaneamento de segurança..."
+        echo "(Aqui você pode rodar o Burp Suite via linha de comando se tiver uma configuração CLI)"
+        echo "(Mas o Burp Suite Community geralmente é GUI,

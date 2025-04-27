@@ -14,10 +14,14 @@ from typing import Literal, Optional
 from pydantic import Field, validator
 from pydantic_settings import BaseSettings
 import os
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class Settings(BaseSettings):
     # ───────────── Segurança • JWT ─────────────
     SECRET_KEY = os.getenv('SECRET_KEY', 'fallback_secret')
+    ALGORITHM = os.getenv('ALGORITHM', 'HS256')
     DB_PASSWORD = os.getenv('DB_PASSWORD', 'fallback_password')
     DB_USERNAME = os.getenv('DB_USERNAME', 'fallback_user')
     DB_HOST = os.getenv('DB_HOST', 'fallback_host')

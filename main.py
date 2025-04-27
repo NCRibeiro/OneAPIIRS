@@ -5,15 +5,15 @@ OneAPIIRS — Módulo Principal do Projeto APE
 # ────── Imports padrão Python ──────
 from datetime import datetime
 import logging
+import secrets
 
 # ────── Imports FastAPI ──────
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
-from app.core.security import oauth2_scheme
-from app.core.config import settings
-from app.dependencies import get_current_user
+from datetime import datetime
+import logging
 
 # ────── Imports locais ──────
 from app.routes import router as api_router
@@ -22,7 +22,7 @@ from app.routers.taxpayer import router as taxpayer_router
 from app.routers.legacy import router as legacy_router
 from app.routers.transform import router as transform_router
 from app.routers.analytics import router as analytics_router
-from app.dependencies import get_db
+from app.dependencies import get_db, get_current_user  # Importando o get_current_user para autenticação
 from app.db.session import SessionLocal, engine
 from app.db.models import Base
 from app.db import init__db
@@ -63,14 +63,37 @@ app = FastAPI(
     redoc_url="/redoc" if settings.ENABLE_DOCS else None
 )
 
-# ────── Middleware ──────
+# ────── Middleware de CORS ──────
+# Definição das configurações de CORS, permitindo todas as origens (ajuste conforme necessário)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=["*"],  # Permite todos os domínios (ajuste conforme necessário)
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"]
 )
+
+# ────── Middleware de Segurança ──────
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"  # Impede que o navegador interprete o conteúdo como outro tipo
+    response.headers["X-Frame-Options"] = "DENY"  # Impede que a aplicação seja carregada em frames (protege contra clickjacking)
+    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"  # Força o uso de HTTPS
+    return response
+
+# ────── Middleware CSRF ──────
+@app.middleware("http")
+async def csrf_token_validation(request: Request, call_next):
+    if request.method in ["POST", "PUT", "DELETE"]:
+        csrf_token = request.headers.get("X-CSRF-Token")
+        if not csrf_token or csrf_token != request.cookies.get("csrf_token"):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="CSRF token inválido ou ausente."
+            )
+    response = await call_next(request)
+    return response
 
 # ────── Registro de Rotas ──────
 app.include_router(auth_router)
@@ -81,7 +104,7 @@ app.include_router(analytics_router)
 
 # ────── Rota Raiz (diagnóstico) ──────
 @app.get("/", tags=["Root"])
-async def get_root():
+async def get_root(current_user: Depends(get_current_user)):  # Dependência de autenticação global
     return {
         "status": "online",
         "project": "OneAPIIRS - APE",
@@ -92,7 +115,8 @@ async def get_root():
             "swagger": "/docs",
             "redoc": "/redoc"
         },
-        "timestamp": datetime.utcnow().isoformat()
+        "timestamp": datetime.utcnow().isoformat(),
+        "user": current_user.username  # Exibindo o nome do usuário autenticado
     }
 
 # ────── Tratamento Global de Erros ──────
