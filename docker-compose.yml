@@ -1,16 +1,45 @@
-version: "3.9"
+version: '3.8'
 
 services:
-  ape-api:
+  api:
     build:
       context: .
       dockerfile: Dockerfile
     container_name: ape-api
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     volumes:
       - .:/app
+    depends_on:
+      - db
+    env_file:
+      - .env
     environment:
-      - PYTHONDONTWRITEBYTECODE=1
-      - PYTHONUNBUFFERED=1
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+      - PYTHONPATH=/app
+      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ape_db
+    networks:
+      - ape_network  
+
+  db:
+    image: postgres:14-alpine
+    container_name: ape-db
+    restart: always
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: ape_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - ape_network
+
+volumes:
+  postgres_data:
+
+
+networks:
+  ape_network:
+
