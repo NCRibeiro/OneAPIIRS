@@ -16,7 +16,8 @@ from pathlib import Path
 from typing import Final
 
 import importlib.metadata as _metadata
-from app.core.settings import settings
+from core.config import settings
+
 
 # ───────────── Versão do Projeto ─────────────
 try:
@@ -66,7 +67,6 @@ __email__ = "contato@nivea.dev"
 __github_username__ = "NCRibeiro"
 __status__ = "Development"
 __title__ = "OneAPIIRS — APE Project"
-__package_name__ = "ape"
-__module_name__ = "core"
+
 
 

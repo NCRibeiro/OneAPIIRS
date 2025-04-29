@@ -43,3 +43,9 @@ def get_legacy_metadata(system: str) -> dict:
     return legacy_metadata[system]
 
     
+def get_all_legacy_metadata() -> dict:
+    """Retorna os metadados de todos os sistemas legados."""
+    return legacy_metadata
+
+    
+

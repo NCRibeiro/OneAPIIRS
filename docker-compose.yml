@@ -6,7 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: ape-api
-    command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
     ports:
       - "8000:8000"
     volumes:
@@ -18,6 +18,22 @@ services:
     environment:
       - PYTHONPATH=/app
       - DATABASE_URL=postgresql://postgres:postgres@db:5432/ape_db
+      - ONEAPIIRS_SECRET_KEY=segredo_super_secreto
+      - ONEAPIIRS_PUBLIC_KEY=   # pode deixar vazio se não usar
+      - ONEAPIIRS_ALGORITHM=HS256
+      - ONEAPIIRS_TOKEN_EXPIRE_MIN=30
+      - DATABASE_NAME=ape_db
+      - DATABASE_USER=postgres
+      - DATABASE_PASSWORD=postgres
+      - DATABASE_HOST=db
+      - DATABASE_PORT=5432
+      - DATABASE_DRIVER=postgresql
+      - APP_ENV=development
+      - DEBUG=True
+      - TESTING=False
+      - API_VERSION=v1
+      - API_PREFIX=/api/v1
+      - ENABLE_DOCS=True
     networks:
       - ape_network  
 

@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 from app.models.user import User  # Ajuste o modelo conforme sua estrutura
+from app.db.session import get_db
 from app.db.session import async_session
 from app.core.config import settings
 from jose import jwt

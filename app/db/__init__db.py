@@ -18,7 +18,13 @@ logger = logging.getLogger(__name__)
 
 # Função para inicializar o banco de dados
 async def init_db(drop: bool = False) -> None:
-    """Cria (e opcionalmente recria) todas as tabelas no banco de dados."""
+    """
+    Cria (e opcionalmente recria) todas as tabelas no banco de dados.
+    Parâmetro:
+    - drop (bool): Se True, apagará todas as tabelas existentes antes de criar novas. Use com cautela!
+
+    """
+
     try:
         if drop:
             logger.warning("DROP solicitado — apagando todas as tabelas…")

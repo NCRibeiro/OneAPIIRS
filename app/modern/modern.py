@@ -7,8 +7,8 @@ class ModernRecord(Base):
 
     record_id = Column(Integer, primary_key=True, index=True)
     taxpayer_id = Column(String, index=True)
-    income = Column(Integer)
-    tax = Column(Integer)
+    income = Column(Float)  # Alterado para Float
+    tax = Column(Float)  # Alterado para Float
     created_at = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):

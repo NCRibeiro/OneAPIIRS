@@ -7,9 +7,9 @@ class Taxpayer(Base):
     __tablename__ = "taxpayers"
 
     taxpayer_id = Column(String, primary_key=True, index=True)
-    name = Column(String, index=True)
+    name = Column(String, index=True)  # Já tem índice
     registered_at = Column(DateTime, default=datetime.utcnow)
-    status = Column(String, default="ACTIVE")
+    status = Column(String, default="ACTIVE", index=True)  # Adicionado índice para status
 
     # Relacionamentos, se necessário
     # Exemplo: relationship("Income", back_populates="taxpayer")

@@ -50,5 +50,6 @@ CMD ["sh", "-c", "\
         python app/dashboard/dashboard.py; \
     else \
         echo '[INFO] Iniciando API FastAPI...'; \
-        uvicorn app.main:app --host 0.0.0.0 --port 8000\
+        uvicorn app.main:app --host 0.0.0.0 --port 8000; \
     fi"]
+

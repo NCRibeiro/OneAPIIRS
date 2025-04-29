@@ -7,10 +7,11 @@ class LegacyRecord(Base):
 
     record_id = Column(Integer, primary_key=True, index=True)
     taxpayer_id = Column(String, index=True)
-    gross_income = Column(Integer)
-    tax_paid = Column(Integer)
+    gross_income = Column(Float)  # Alterado para Float para lidar com valores decimais
+    tax_paid = Column(Float)  # Alterado para Float para lidar com valores decimais
     raw_line = Column(String)
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return f"<LegacyRecord {self.record_id} - {self.taxpayer_id}>"
+

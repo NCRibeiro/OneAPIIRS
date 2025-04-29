@@ -2,7 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, status, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from jose import jwt
 from datetime import datetime, timedelta
-from app.core.config import settings
+from app.core.config import settings, timedelta
+from app.core.security import get_password_hash
+from app.db.session import SessionLocal
+from app.db.models import User as UserModel
+from app.dependencies import get_db
+
 import uuid
 from pydantic import BaseModel
 from app.core.logging_config import get_logger
@@ -76,4 +81,12 @@ def login(form_data: OAuth2PasswordRequestForm = Depends(), response: Response =
         "csrf_token": csrf_token,  # Retorna o token CSRF para o frontend
         "message": f"Bem-vinda, {user['full_name']}. Seu token é válido por {settings.access_token_expire_minutes} minutos."
     }
+
+# Rota de logout
+@router.post("/logout")
+async def logout(response: Response):
+    response.delete_cookie(key="csrf_token")
+    return JSONResponse(content={"message": "Logout efetuado com sucesso."}, status_code=status.HTTP_200_OK)
+
+
 

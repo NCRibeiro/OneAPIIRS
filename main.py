@@ -12,8 +12,7 @@ from fastapi import FastAPI, Request, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
-from datetime import datetime
-import logging
+from core.settings import settings
 
 # ────── Imports locais ──────
 from app.routes import router as api_router
@@ -26,7 +25,7 @@ from app.dependencies import get_db, get_current_user  # Importando o get_curren
 from app.db.session import SessionLocal, engine
 from app.db.models import Base
 from app.db import init__db
-from app.core.settings import settings
+
 
 # ────── Variáveis de Ambiente ──────
 from dotenv import load_dotenv
