@@ -1,11 +1,25 @@
-# Importa as rotas do módulo moderno
+# modern/__init__.py
+"""
+Pacote de rotas do módulo Modern.
+Agrupa as rotas relacionadas ao sistema moderno.
+"""
+
 from fastapi import APIRouter
 
-# Importa as rotas definidas no arquivo modern_routes.py
+# Importa o roteador específico do módulo moderno
 from .modern_routes import router as modern_router
 
-# Cria o APIRouter para o módulo moderno
-router = APIRouter()
+# Roteador raiz do módulo moderno
+router = APIRouter(
+    prefix="/modern",
+    tags=["modern"],
+)
 
-# Inclui as rotas do arquivo modern_routes.py no APIRouter principal
-router.include_router(modern_router, prefix="/modern", tags=["modern"])
+# Inclui todas as rotas definidas em modern_routes
+router.include_router(
+    modern_router,
+    prefix="",
+    tags=["modern"],
+)
+
+__all__ = ["router"]

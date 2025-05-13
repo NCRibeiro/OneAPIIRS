@@ -1,101 +1,106 @@
+# app/core/settings.py
 """
-OneAPIIRS — APE Configurações Globais
+OneAPIIRS — Configurações Globais
 
-API unificadora para integração com sistemas legados do IRS.
-Transformação de dados estilo COBOL em JSON moderno.
-Autenticação JWT, arquitetura escalável, pronta para nuvem.
-
-Desenvolvido por Nívea C. Ribeiro — engenheira fullstack visionária.
+Define todas as variáveis de ambiente e metadados da aplicação.
+Usa `config_env.py` para injeção manual de variáveis.
 """
-
+import config_env  # noqa: F401 (popula variáveis em os.environ)
 from datetime import timedelta
-from typing import Literal, Optional
+from typing import List, Optional
 
-from pydantic import Field, validator
+# Pydantic v2: BaseSettings movido para pydantic-settings
 from pydantic_settings import BaseSettings
-import os
-from dotenv import load_dotenv
+from pydantic import validator, AnyHttpUrl
 
-load_dotenv()
 
 class Settings(BaseSettings):
-    # ───────────── Segurança • JWT ─────────────
-    SECRET_KEY = os.getenv('SECRET_KEY', 'fallback_secret')
-    ALGORITHM = os.getenv('ALGORITHM', 'HS256')
-    DB_PASSWORD = os.getenv('DB_PASSWORD', 'fallback_password')
-    DB_USERNAME = os.getenv('DB_USERNAME', 'fallback_user')
-    DB_HOST = os.getenv('DB_HOST', 'fallback_host')
-    DB_PORT = os.getenv('DB_PORT', 'fallback_port')
-    DB_NAME = os.getenv('DB_NAME', 'fallback_db')
-    public_key: Optional[str] = Field(None, alias="ONEAPIIRS_PUBLIC_KEY")
-    algorithm: str = Field("HS256", alias="ONEAPIIRS_ALGORITHM")
-    access_token_expire_minutes: int = Field(30, alias="ONEAPIIRS_TOKEN_EXPIRE_MIN")
+    # ────────── Segurança • JWT ──────────
+    SECRET_KEY: str
+    REFRESH_SECRET_KEY: str
+    # Ensure this matches the attribute in settings
+    JWT_ALGORITHM: str = "HS256"
+    algorithms = [JWT_ALGORITHM]  # Use the attribute defined in the class
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    REFRESH_TOKEN_EXPIRE_MINUTES: int = 1440
 
-    # ───────────── Banco de Dados ──────────────
-    database_url: str = Field(..., alias="DATABASE_URL")
-    database_name: str = Field("ape_fiscal_db", alias="DATABASE_NAME")
-    database_user: str = Field("postgres", alias="DATABASE_USER")
-    database_password: str = Field("postgres", alias="DATABASE_PASSWORD")
-    database_host: str = Field("db", alias="DATABASE_HOST")
-    database_port: int = Field(5432, alias="DATABASE_PORT")
-    database_driver: str = Field("postgresql", alias="DATABASE_DRIVER")
+    # ────────── Banco de Dados ──────────
+    DATABASE_URL: str
 
-    # ───────────── Ambiente / Debug ────────────
-    app_env: Literal["development", "staging", "production", "test"] = Field(
-        "development", alias="APP_ENV"
+    # ────────── Execução / Ambiente ──────────
+    APP_ENV: str = "development"
+    DEBUG: bool = False
+    RELOAD: bool = False
+    HOST: str = "0.0.0.0"
+    PORT: int = 8000
+    WORKERS: int = 1
+    WORKER_CLASS: str = "uvicorn.workers.UvicornWorker"
+
+    # ────────── FastAPI • Metadados ──────────
+    API_PREFIX: str = "/api/v1"
+    API_TITLE: str = "OneAPIIRS — APE Project"
+    API_DESCRIPTION: str = (
+        "API unificadora para integração com sistemas legados do IRS."
     )
-    debug: bool = Field(True, alias="DEBUG")
-    testing: bool = Field(False, alias="TESTING")
+    API_VERSION: str = "v1"
+    API_DOCS_URL: Optional[str] = "/docs"
+    API_REDOC_URL: Optional[str] = "/redoc"
+    API_OPENAPI_URL: Optional[str] = "/openapi.json"
+    ENABLE_DOCS: bool = True
 
-    # ───────────── API / FastAPI ───────────────
-    api_version: str = Field("v1", alias="API_VERSION")
-    api_prefix: str = Field("/api/v1", alias="API_PREFIX")
-    enable_docs: bool = Field(True, alias="ENABLE_DOCS")
+    # ────────── CORS ──────────
+    CORS_ORIGINS: List[AnyHttpUrl] = []
 
-    # ───────────── Helpers ─────────────────────
+    # ────────── Logging ──────────
+    LOG_LEVEL: str = "info"
+
     @property
-    def access_token_expire(self) -> timedelta:
-        return timedelta(minutes=self.access_token_expire_minutes)
+    def access_token_expires(self) -> timedelta:
+        return timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
 
-    # ───────────── Validações ──────────────────
-    @validator("database_url", pre=True)
-    def _db_url_must_be_postgres(cls, v: str) -> str:
-        if not v.startswith("postgresql://"):
-            raise ValueError("DATABASE_URL deve começar com 'postgresql://'")
+    @property
+    def refresh_token_expires(self) -> timedelta:
+        return timedelta(minutes=self.REFRESH_TOKEN_EXPIRE_MINUTES)
+
+    @validator("DATABASE_URL", pre=True, always=True)
+    def validate_db_url(cls, v):
+        if not v:
+            raise ValueError("DATABASE_URL não configurado")
         return v
 
-    # ───────────── Configuração do Pydantic ─────
+    @validator("CORS_ORIGINS", pre=True)
+    def split_cors_origins(cls, v):
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
+
     class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
+        env_prefix = "ONEAPIIRS_"
+        env_file = None  # não carrega .env
         case_sensitive = True
 
-    # ───────────── Compatibilidade Legada ───────
-    @property
-    def API_PREFIX(self) -> str:  # noqa: N802
-        return self.api_prefix
 
+# Instância global de configurações
+settings = Settings(
+    SECRET_KEY="your-secret-key",
+    REFRESH_SECRET_KEY="your-refresh-secret-key",
+    DATABASE_URL="your-database-url",
+)
+# settings.validate()
 
-# ───────────── Instância Global ───────────────
-settings = Settings()
-
-# ───────────── Metadados do Projeto ───────────
-__all__ = ["settings"]
-__title__ = "OneAPIIRS — APE Project"
+__all__ = [
+    "settings",
+]
+__version__ = "1.0.0"
 __author__ = "Nívea C. Ribeiro"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023 Nívea C. Ribeiro"
 __url__ = "https://github.com/NCRibeiro"
-__version_info__ = (2, 0, 0)
-__version__ = ".".join(map(str, __version_info__))
-__release__ = __version__
-__status__ = "Development"
-__maintainer__ = "Nívea C. Ribeiro"
-__email__ = "nc.chagasribeiro@gmail.com"
-__github_username__ = "NCRibeiro"
-__description__ = __doc__
+__description__ = "OneAPIIRS — Configurações Globais"
 __long_description__ = __doc__
 __long_description_content_type__ = "text/markdown"
-__package_name__ = "ape"
-__module_name__ = "core"
-
+__maintainer__ = "Nívea C. Ribeiro"
+__email__ = "contato@nivea.dev"
+__github_username__ = "NCRibeiro"
+__status__ = "Development"
+__title__ = "OneAPIIRS — APE Project"

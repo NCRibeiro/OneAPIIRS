@@ -1,65 +1,123 @@
-"""
-Pacote ``app.db``
+# app/db/__init__.py
 
-- Cria o engine e a fábrica de sessões.
-- Expõe Base declarativa para os modelos.
-- Fornece a dependência ``get_db`` para FastAPI.
+"""
+OneAPIIRS — Pacote de Banco de Dados
+
+Este pacote expõe:
+- Base: classe base declarativa para modelos ORM
+- engine: AsyncEngine do SQLAlchemy (AsyncPG)
+- async_session: factory de sessões AsyncSession
+- get_db: dependência FastAPI para injeção de sessão
+- init_db: utilitário assíncrono para criar (e opcionalmente recriar)tabelas
+- init_db_sync: utilitário síncrono para criar (e opcionalmente recriar)tabelas
+- main: CLI entrypoint para rodar init_db via linha de comando
 """
 
+import argparse
+import asyncio
 import logging
-from app.db.session import async_session  # Usando o async_session assíncrono
-from app.db.init_db import init_db
-from app.db.models import Base
-from app.db.dependencies import get_current_user
+from typing import Optional
 
-# Configuração de log
-logger = logging.getLogger(__name__)
+from sqlalchemy.ext.asyncio import AsyncEngine
+from sqlalchemy.exc import SQLAlchemyError
 
-# ─────────────────────────────────────────────
-# Dependência FastAPI
-# ─────────────────────────────────────────────
-def get_db():
+from .session import engine, AsyncSessionLocal, get_db  # noqa: F401
+from app.db.models import Base  # noqa: F401
+import app.db.models  # noqa: F401 Register models for Base.metadata
+
+# Configura o logger para este módulo
+logger = logging.getLogger("app.db")
+if not logger.handlers:
+    handler = logging.StreamHandler()
+    formatter = logging.Formatter(
+        "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+logger.setLevel(logging.INFO)
+
+
+__all__ = [
+    "Base",
+    "engine",
+    "AsyncSessionLocal",
+    "get_db",
+    "init_db",
+    "init_db_sync",
+    "main",
+]
+
+
+async def init_db(
+    drop: bool = False,
+    db_engine: Optional[AsyncEngine] = None,
+) -> None:
     """
-    Provides a generator function to yield a database session for asynchronous operations.
+    Cria (ou recria) tabelas definidas em Base.metadata.
 
-    Yields:
-        AsyncSession: An asynchronous database session.
-
-    Ensures:
-        The database session is properly closed after use.
+    Args:
+        drop (bool): apaga tabelas existentes se True.
+        db_engine (AsyncEngine): engine a usar
+            (padrão session.engine).
     """
-    db = async_session()  # Usando o async_session para sessões assíncronas
-    logger.debug("Sessão de banco de dados aberta.")
+    engine_obj = db_engine or engine
     try:
-        yield db
-    finally:
-        db.close()  # Fechar a sessão assíncrona ao final
-        logger.debug("Sessão de banco de dados fechada.")
+        async with engine_obj.begin() as conn:
+            if drop:
+                logger.warning("DROP solicitado - apagando tabelas existentes")
+                await conn.run_sync(Base.metadata.drop_all)
 
-# ─────────────────────────────────────────────
-# Exposição de módulos e variáveis
-# ─────────────────────────────────────────────
-__all__ = ["async_session", "init_db", "Base", "get_db"]
-
-# ─────────────────────────────────────────────
-# Metadados do pacote
-# ─────────────────────────────────────────────
-__version__ = "2.0.0"
-__author__ = "Nívea C. Ribeiro"
-__license__ = "MIT"
-__copyright__ = "Copyright 2023 Nívea C. Ribeiro"
-__url__ = "https://github.com/NCRibeiro"
-__description__ = __doc__
-__long_description__ = __doc__
-__long_description_content_type__ = "text/markdown"
-__maintainer__ = "Nívea C. Ribeiro"
-__email__ = "contato@nivea.dev"
-__github_username__ = "NCRibeiro"
-__status__ = "Development"
-__title__ = "OneAPIIRS — APE Project"
-__package_name__ = "ape"
-__module_name__ = "db"
+            logger.info("Criando tabelas no banco de dados")
+            await conn.run_sync(Base.metadata.create_all)
+            logger.info("Tabelas criadas com sucesso")
+    except SQLAlchemyError as err:
+        logger.error("Erro ao (re)criar tabelas: %s", err)
+        raise
+    except Exception as exc:
+        logger.exception("Falha inesperada na inicialização do DB: %s", exc)
+    raise
 
 
+def init_db_sync(drop: bool = False) -> None:
+    """
+    Versão síncrona de init_db para uso em scripts CLI.
+
+    Exemplo:
+        python -c "from app.db import init_db_sync; init_db_sync(drop=True)"
+    """
+
+    try:
+        asyncio.run(init_db(drop=drop))
+    except Exception:
+        logger.critical("init_db_sync falhou")
+        raise
 
 
+def main() -> None:
+    """
+    CLI entrypoint para inicializar o banco via linha de comando.
+    """
+    parser = argparse.ArgumentParser(
+        description="Inicializa o banco de dados para OneAPIIRS — APE."
+    )
+    parser.add_argument(
+        "--drop",
+        action="store_true",
+        help="Dropa tabelas existentes antes de criar novas.",
+    )
+    args = parser.parse_args()
+
+    logger.info(
+        "Iniciando init_db (drop=%s) usando engine %s",  # noqa: E501
+        args.drop,
+        engine.url,
+    )
+    try:
+        asyncio.run(init_db(drop=args.drop))
+    except Exception as e:
+        logger.exception("Falha na inicialização do banco: %s", e)
+        exit(1)
+
+
+if __name__ == "__main__":
+    main()

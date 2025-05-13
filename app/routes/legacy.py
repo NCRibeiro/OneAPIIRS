@@ -1,69 +1,97 @@
-from fastapi import APIRouter, Depends, HTTPException
-from sqlalchemy.orm import Session
-from app.db import SessionLocal
-from app.models.legacy import LegacyRecord
-from app.models.taxpayer import Taxpayer
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from core.settings import settings
+from dependencies import (
+    get_db,
+    get_current_user,
+)
 
-router = APIRouter()
+from app.db.models import LegacyData as LegacyModel
+from app.db.models import TaxpayerData as TaxpayerModel
+from app.schemas.legacy import LegacyCreate, LegacyEntry
 
-# Função para obter a sessão do banco de dados
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+router = APIRouter(
+    prefix=f"{settings.api_prefix}/legacy",
+    tags=["Legacy Records"],
+    dependencies=[Depends(get_current_user)],
+)
 
-# Rota para criar um registro legado
-@router.post("/legacy/")
-def create_legacy_record(record: LegacyRecord, db: Session = Depends(get_db)):
-    # Verificar se o contribuinte existe
-    taxpayer = db.query(Taxpayer).filter(Taxpayer.taxpayer_id == record.taxpayer_id).first()
+
+@router.post("/", response_model=LegacyEntry, status_code=status.HTTP_201_CREATED)
+async def create_legacy_record(
+    payload: LegacyCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    # Verifica se o contribuinte existe
+    result = await db.execute(
+        select(TaxpayerModel).filter(TaxpayerModel.id == payload.taxpayer_id)
+    )
+    taxpayer = result.scalars().first()
     if not taxpayer:
-        raise HTTPException(status_code=404, detail="Taxpayer not found")
-    
-    db.add(record)
-    db.commit()
-    db.refresh(record)
-    return record
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
+        )
+    new_record = LegacyModel(**payload.dict())
+    db.add(new_record)
+    await db.commit()
+    await db.refresh(new_record)
+    return new_record
 
-# Rota para listar os registros legados
-@router.get("/legacy/")
-def get_legacy_records(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    legacy_records = db.query(LegacyRecord).offset(skip).limit(limit).all()
-    return legacy_records
 
-# Rota para buscar um registro legado específico
-@router.get("/legacy/{record_id}")
-def get_legacy_record(record_id: int, db: Session = Depends(get_db)):
-    record = db.query(LegacyRecord).filter(LegacyRecord.record_id == record_id).first()
+@router.get("/", response_model=list[LegacyEntry])
+async def list_legacy_records(
+    skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(LegacyModel).offset(skip).limit(limit),
+    )
+    return result.scalars().all()
+
+
+@router.get("/{record_id}", response_model=LegacyEntry)
+async def get_legacy_record(record_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(LegacyModel).filter(LegacyModel.id == record_id),
+    )
+    record = result.scalars().first()
     if not record:
-        raise HTTPException(status_code=404, detail="Legacy record not found")
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Legacy record not found"
+        )
     return record
 
-# Rota para atualizar um registro legado
-@router.put("/legacy/{record_id}")
-def update_legacy_record(record_id: int, record: LegacyRecord, db: Session = Depends(get_db)):
-    db_record = db.query(LegacyRecord).filter(LegacyRecord.record_id == record_id).first()
-    if not db_record:
-        raise HTTPException(status_code=404, detail="Legacy record not found")
-    
-    db_record.gross_income = record.gross_income
-    db_record.tax_paid = record.tax_paid
-    db_record.raw_line = record.raw_line
-    db_record.timestamp = record.timestamp
-    db.commit()
-    db.refresh(db_record)
-    
-    return db_record
 
-# Rota para excluir um registro legado
-@router.delete("/legacy/{record_id}")
-def delete_legacy_record(record_id: int, db: Session = Depends(get_db)):
-    db_record = db.query(LegacyRecord).filter(LegacyRecord.record_id == record_id).first()
-    if not db_record:
-        raise HTTPException(status_code=404, detail="Legacy record not found")
-    
-    db.delete(db_record)
-    db.commit()
+@router.put("/{record_id}", response_model=LegacyEntry)
+async def update_legacy_record(
+    record_id: int, payload: LegacyCreate, db: AsyncSession = Depends(get_db)
+):
+    result = await db.execute(
+        select(LegacyModel).filter(LegacyModel.id == record_id),
+    )
+    record = result.scalars().first()
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Legacy record not found"
+        )
+    for field, value in payload.dict().items():
+        setattr(record, field, value)
+    await db.commit()
+    await db.refresh(record)
+    return record
+
+
+@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_legacy_record(record_id: int, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(
+        select(LegacyModel).filter(LegacyModel.id == record_id),
+    )
+    record = result.scalars().first()
+    if not record:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Legacy record not found"
+        )
+    await db.delete(record)
+    await db.commit()
     return {"detail": "Legacy record deleted"}
+    return record

@@ -1,17 +1,18 @@
 from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
-from app.core.config import settings
+from sqlalchemy.orm import sessionmaker, declarative_base
+from core.settings import settings
 
-# Base do SQLAlchemy
+# ─── Base do ORM ──────────────────────────────────────
 Base = declarative_base()
 
-# Banco de dados
-DATABASE_URL = settings.database_url
-engine = create_async_engine(DATABASE_URL, connect_args={"check_same_thread": False}, echo=settings.debug)
+# ─── Engine assíncrono (usa asyncpg via URL em settings) ─
+engine = create_async_engine(
+    settings.DATABASE_URL,  # Ex: postgresql+asyncpg://user:pass@db:5432/dbname
+    echo=settings.DEBUG,
+    future=True,  # Recomenda usar API 2.0 do SQLAlchemy
+)
 
-# Session
-SessionLocal = sessionmaker(
-    bind=engine,
-    class_=AsyncSession,
-    expire_on_commit=False
+# ─── Fábrica de sessões assíncronas ────────────────────
+AsyncSessionLocal = sessionmaker(  # type: ignore
+    autocommit=False, autoflush=False, bind=engine, class_=AsyncSession
 )

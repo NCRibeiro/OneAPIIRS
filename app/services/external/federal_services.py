@@ -2,11 +2,12 @@
 
 """
 Serviços simulados para validação de CPF, score de renda e checagem de dívidas.
-Esses serviços representam integrações fictícias com sistemas federais externos.
+Integrações fictícias com sistemas federais externos.
 """
 
 import random
 import re
+
 
 def validate_cpf_externally(cpf: str) -> bool:
     """
@@ -15,20 +16,22 @@ def validate_cpf_externally(cpf: str) -> bool:
     cpf_pattern = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
     if not re.match(cpf_pattern, cpf):
         return False
-    return random.choice([True, True, False])  # Probabilidade mais alta de ser válido
+    # Maior probabilidade de ser válido
+    return random.choice([True, True, False])
+
 
 def fetch_income_score(cpf: str) -> int:
     """
     Retorna um score de renda baseado em uma lógica simulada.
     """
-    base = sum(ord(char) for char in cpf if char.isdigit())
+    base = sum(int(ch) for ch in re.findall(r"\d", cpf))
     return base % 1000  # Score entre 0 e 999
+
 
 def check_debts(cpf: str) -> bool:
     """
     Verifica se há pendências financeiras ativas para o CPF.
+    Simula 30% de chance de dívida.
     """
-    # Simula 30% de chance de dívida
+
     return random.random() < 0.3
-
-

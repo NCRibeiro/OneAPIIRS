@@ -1,118 +1,160 @@
+#!/usr/bin/env python
+
+"""
+tools/relatorio_graficos.py — Geração de relatórios e gráficos fiscais
+Uso:
+    python tools/relatorio_graficos.py
+"""
 import pandas as pd
 import numpy as np
 import plotly.express as px
 from fpdf import FPDF
 from sqlalchemy import create_engine
+from core.settings import settings
 from dotenv import load_dotenv
-import os
+import logging
 
-# Carregar as variáveis de ambiente
+# Carrega variáveis de ambiente e configurações
 load_dotenv()
 
-# ============================
-# Conexão com o Banco de Dados
-# ============================
-DATABASE_URL = os.getenv("DATABASE_URL")
-engine = create_engine(DATABASE_URL)
+# Configuração de logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s [%(levelname)s] %(name)s %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
+)
+logger = logging.getLogger("relatorio_graficos")
 
-# Função para buscar os dados fiscais
-def fetch_taxpayer_data():
-    query = "SELECT * FROM taxpayer_data;"  # Ajuste conforme necessário
+# Usa URL síncrona (remove +asyncpg se presente)
+sync_url = str(settings.DATABASE_URL).replace("+asyncpg", "")
+engine = create_engine(sync_url, echo=False, future=True)
+
+
+def fetch_taxpayer_data() -> pd.DataFrame:
+    """
+    Busca dados de contribuintes diretamente do banco.
+    Retorna DataFrame com colunas: 'cpf', 'amount_due', 'amount_paid'.
+    """
+    query = (
+        "SELECT tax_id AS cpf, amount_due AS amount_due, "
+        "amount_paid AS amount_paid "
+        "FROM taxpayer_data"  # Split long line
+    )
     df = pd.read_sql(query, engine)
     return df
 
-# Função para validar os dados
-def validate_data(df):
-    # Garantir que 'Valor Declarado' e 'Valor Pago' não sejam negativos
-    df = df[df['Valor Declarado'] >= 0]
-    df = df[df['Valor Pago'] >= 0]
-    
-    # Garantir que não haja valores ausentes
-    df = df.dropna(subset=['Tipo de Imposto', 'Valor Declarado', 'Valor Pago', 'Status Auditoria', 'Mes'])
-    
+
+def validate_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Valida o DataFrame, removendo valores negativos e nulos.
+    """
+    df = df[(df["amount_due"] >= 0) & (df["amount_paid"] >= 0)]
+    df = df.dropna(subset=["cpf", "amount_due", "amount_paid"])
     return df
 
-# Função para gerar gráficos
-def create_graphs(df):
-    # Gráfico 1: Inconsistências por Tipo de Imposto
-    grafico_inconsistencia = px.bar(
-        df, x='Tipo de Imposto', color='Inconsistência', title="Inconsistências por Tipo de Imposto"
+
+def create_graphs(df: pd.DataFrame):
+    """
+    Gera e salva quatro gráficos principais:
+    1. Inconsistências por contribuinte
+    2. Distribuição de valores pagos
+    3. Evolução do pagamento ao longo do tempo
+    4. Proporção de inconsistências
+    """
+    # Marca inconsistências quando valor devido != valor pago
+    df["Inconsistência"] = np.where(df["amount_due"] != df["amount_paid"], "Sim", "Não")
+
+    # Adiciona coluna de mês aleatório para simulação de evolução
+    df["Mes"] = np.random.choice(
+        ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"],
+        size=len(df),
     )
+
+    # Gráfico 1: Inconsistências por contribuinte
+    graf1 = px.bar(
+        df,
+        x="cpf",
+        color="Inconsistência",
+        title="Inconsistências por Contribuinte",
+    )
+    graf1.write_image("grafico_inconsistencia.png")
 
     # Gráfico 2: Distribuição de Valores Pagos
-    grafico_distribuicao_pago = px.histogram(
-        df, x='Valor Pago', title="Distribuição de Valores Pagos"
-    )
+    graf2 = px.histogram(df, x="amount_paid", title="Distribuição de Valores Pagos")
+    graf2.write_image("grafico_distribuicao_pago.png")
 
     # Gráfico 3: Evolução do Pagamento de Impostos
-    grafico_evolucao = px.line(
-        df.groupby('Mes').sum().reset_index(), x='Mes', y='Valor Pago', title="Evolução do Pagamento de Impostos"
+    df_month = df.groupby("Mes").sum().reset_index()
+    graf3 = px.line(
+        df_month,
+        x="Mes",
+        y="amount_paid",
+        title="Evolução do Pagamento de Impostos",
     )
+    graf3.write_image("grafico_evolucao.png")
 
-    # Gráfico 4: Status de Auditoria
-    grafico_status_auditoria = px.pie(
-        df, names='Status Auditoria', title="Status de Auditoria das Transações"
-    )
+    # Gráfico 4: Proporção de Inconsistências
+    graf4 = px.pie(df, names="Inconsistência", title="Proporção de Inconsistências")
+    graf4.write_image("grafico_status_inconsistencia.png")
 
-    # Salvando os gráficos como imagens
-    grafico_inconsistencia.write_image("grafico_inconsistencia.png")
-    grafico_distribuicao_pago.write_image("grafico_distribuicao_pago.png")
-    grafico_evolucao.write_image("grafico_evolucao.png")
-    grafico_status_auditoria.write_image("grafico_status_auditoria.png")
-    
-    return grafico_inconsistencia, grafico_distribuicao_pago, grafico_evolucao, grafico_status_auditoria
+    return graf1, graf2, graf3, graf4
 
-# Função para exportar dados para Excel
-def export_to_excel(df):
+
+def export_to_excel(df: pd.DataFrame):
+    """
+    Exporta dados validados para Excel com formatação condicional.
+    """
     with pd.ExcelWriter("relatorio_fiscal.xlsx", engine="xlsxwriter") as writer:
         df.to_excel(writer, index=False, sheet_name="Dados Fiscais")
-        
-        # Obtendo o objeto de planilha
         worksheet = writer.sheets["Dados Fiscais"]
-        
-        # Aplicando formatação condicional
-        worksheet.conditional_format('C2:C101', {'type': 'cell', 'criteria': '>', 'value': 10000, 'format': {'bold': True, 'font_color': 'red'}})
+        # Formato para valores altos.
+        # Fixed: Added a period at the end of the comment.
+        fmt = writer.book.add_format({"bold": True, "font_color": "red"})
+        worksheet.conditional_format(
+            "B2:B{}".format(len(df) + 1),
+            {
+                "type": "cell",
+                "criteria": ">",
+                "value": 10000,
+                "format": fmt,
+            },
+        )
 
-# Função para gerar o PDF
+
 def create_pdf():
+    """
+    Gera um PDF agregando o gráfico de inconsistências.
+    """
     pdf = FPDF()
     pdf.add_page()
+    pdf.set_font("Arial", "B", 16)
+    pdf.cell(0, 10, "Relatório Fiscal Simulado", 0, 1, "C")
 
-    # Título
-    pdf.set_font("Arial", 'B', 16)
-    pdf.cell(200, 10, txt="Relatório Fiscal Simulado", ln=True, align="C")
-
-    # Adicionando gráficos ao PDF
+    # Insere o gráfico de inconsistências
     pdf.ln(10)
     pdf.image("grafico_inconsistencia.png", x=10, y=30, w=180)
     pdf.ln(100)
     pdf.set_font("Arial", size=12)
-    pdf.multi_cell(0, 10, txt="O gráfico acima mostra as inconsistências por tipo de imposto.")
+    pdf.multi_cell(
+        0,
+        10,
+        "O gráfico acima mostra as inconsistências identificadas nos "
+        "valores declarados vs pagos.",
+    )  # Fixed: Split long line
 
-    # Salvando o PDF
     pdf.output("relatorio_fiscal.pdf")
+
 
 # Função principal
 def main():
-    # Carregando os dados
-    df_transacoes = fetch_taxpayer_data()
-
-    # Validando os dados
-    df_transacoes = validate_data(df_transacoes)
-
-    # Adicionando a coluna de inconsistência
-    df_transacoes['Inconsistência'] = np.where(df_transacoes['Valor Declarado'] != df_transacoes['Valor Pago'], 'Sim', 'Não')
-    df_transacoes['Mes'] = np.random.choice(['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'], size=len(df_transacoes))
-
-    # Criando os gráficos
-    create_graphs(df_transacoes)
-
-    # Exportando para Excel
-    export_to_excel(df_transacoes)
-
-    # Criando o PDF
+    logger.info("Iniciando geração de relatório fiscal...")
+    df = fetch_taxpayer_data()
+    df = validate_data(df)
+    create_graphs(df)
+    export_to_excel(df)
     create_pdf()
+    logger.info("Relatório gerado com sucesso.")
 
-# Rodar o script principal
+
 if __name__ == "__main__":
     main()

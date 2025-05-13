@@ -1,63 +1,95 @@
-from fastapi import APIRouter, Depends, HTTPException
+# app/routers/taxpayer.py
+
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.db import SessionLocal
-from app.models.taxpayer import Taxpayer
-from app.core.config import settings
-from app.security import get_current_user
+from app.dependencies import get_db, get_current_user
+from app.db.models import Taxpayer as TaxpayerModel
+from app.schemas.taxpayer import TaxpayerCreate, TaxpayerRead
 
-router = APIRouter()
+router = APIRouter(prefix="/taxpayers", tags=["Taxpayers"])
 
-# Função para obter a sessão do banco de dados
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
 
-# Rota para criar um contribuinte
-@router.post("/taxpayer/")
-def create_taxpayer(taxpayer: Taxpayer, db: Session = Depends(get_db)):
-    db.add(taxpayer)
+@router.post(
+    "/",
+    response_model=TaxpayerRead,
+    status_code=status.HTTP_201_CREATED,
+    dependencies=[Depends(get_current_user)],
+)
+def create_taxpayer(
+    taxpayer: TaxpayerCreate,
+    db: Session = Depends(get_db),
+):
+    new_tp = TaxpayerModel(**taxpayer.dict())
+    db.add(new_tp)
     db.commit()
-    db.refresh(taxpayer)
-    return taxpayer
+    db.refresh(new_tp)
+    return new_tp
 
-# Rota para listar os contribuintes
-@router.get("/taxpayers/")
-def get_taxpayers(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    taxpayers = db.query(Taxpayer).offset(skip).limit(limit).all()
-    return taxpayers
 
-# Rota para buscar um contribuinte específico
-@router.get("/taxpayer/{taxpayer_id}")
-def get_taxpayer(taxpayer_id: str, db: Session = Depends(get_db)):
-    taxpayer = db.query(Taxpayer).filter(Taxpayer.taxpayer_id == taxpayer_id).first()
-    if not taxpayer:
-        raise HTTPException(status_code=404, detail="Taxpayer not found")
-    return taxpayer
+@router.get(
+    "/", response_model=list[TaxpayerRead], dependencies=[Depends(get_current_user)]
+)
+def list_taxpayers(
+    skip: int = 0,
+    limit: int = 10,
+    db: Session = Depends(get_db),
+):
+    return db.query(TaxpayerModel).offset(skip).limit(limit).all()
 
-# Rota para atualizar um contribuinte
-@router.put("/taxpayer/{taxpayer_id}")
-def update_taxpayer(taxpayer_id: str, taxpayer: Taxpayer, db: Session = Depends(get_db)):
-    db_taxpayer = db.query(Taxpayer).filter(Taxpayer.taxpayer_id == taxpayer_id).first()
-    if not db_taxpayer:
-        raise HTTPException(status_code=404, detail="Taxpayer not found")
-    
-    db_taxpayer.name = taxpayer.name
-    db_taxpayer.status = taxpayer.status
+
+@router.get(
+    "/{taxpayer_id}",
+    response_model=TaxpayerRead,
+    dependencies=[Depends(get_current_user)],
+)
+def get_taxpayer(
+    taxpayer_id: int,
+    db: Session = Depends(get_db),
+):
+    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    if not tp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
+        )
+    return tp
+
+
+@router.put(
+    "/{taxpayer_id}",
+    response_model=TaxpayerRead,
+    dependencies=[Depends(get_current_user)],
+)
+def update_taxpayer(
+    taxpayer_id: int,
+    payload: TaxpayerCreate,
+    db: Session = Depends(get_db),
+):
+    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    if not tp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
+        )
+    for field, value in payload.dict().items():
+        setattr(tp, field, value)
     db.commit()
-    db.refresh(db_taxpayer)
-    
-    return db_taxpayer
+    db.refresh(tp)
+    return tp
 
-# Rota para excluir um contribuinte
-@router.delete("/taxpayer/{taxpayer_id}")
-def delete_taxpayer(taxpayer_id: str, db: Session = Depends(get_db)):
-    db_taxpayer = db.query(Taxpayer).filter(Taxpayer.taxpayer_id == taxpayer_id).first()
-    if not db_taxpayer:
-        raise HTTPException(status_code=404, detail="Taxpayer not found")
-    
-    db.delete(db_taxpayer)
+
+@router.delete(
+    "/{taxpayer_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    dependencies=[Depends(get_current_user)],
+)
+def delete_taxpayer(
+    taxpayer_id: int,
+    db: Session = Depends(get_db),
+):
+    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    if not tp:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
+        )
+    db.delete(tp)
     db.commit()
     return {"detail": "Taxpayer deleted"}

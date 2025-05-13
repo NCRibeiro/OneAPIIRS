@@ -1,149 +1,163 @@
+# app/main.py
 """
 OneAPIIRS — Módulo Principal do Projeto APE
 """
 
-# ────── Imports padrão Python ──────
-from datetime import datetime
-import logging
-import secrets
+# 1) Injeta variáveis de ambiente (config_env.py deve popular os.environ)
+import config_env  # noqa: F401
 
-# ────── Imports FastAPI ──────
+# 2) Importa e instancia configurações (settings.py)
+from core.settings import settings
+
+# 3) Importa e instancia o app FastAPI
+
+
 from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
-from core.settings import settings
+import time
+from datetime import datetime
+from app.routes import api_router
+from dependencies import get_current_user
+from core.logging_config import get_logger
 
-# ────── Imports locais ──────
-from app.routes import router as api_router
-from app.routers.auth import router as auth_router
-from app.routers.taxpayer import router as taxpayer_router
-from app.routers.legacy import router as legacy_router
-from app.routers.transform import router as transform_router
-from app.routers.analytics import router as analytics_router
-from app.dependencies import get_db, get_current_user  # Importando o get_current_user para autenticação
-from app.db.session import SessionLocal, engine
-from app.db.models import Base
-from app.db import init__db
+# configura logger
+logger = get_logger("ape-api")
+logger.setLevel(settings.LOG_LEVEL.upper())
+logger.info("Config carregada: %s", settings.dict())
 
-
-# ────── Variáveis de Ambiente ──────
-from dotenv import load_dotenv
-import sys
-import os
-
-load_dotenv()
-sys.path.append(os.path.dirname(os.path.abspath(__file__)))
-
-# ────── Configuração do Logger ──────
-logging.basicConfig(level=logging.INFO)
-logger = logging.getLogger("APE")
-
-# ────── Instância principal da aplicação ──────
+# instancia FastAPI
 app = FastAPI(
-    title="OneAPIIRS — APE Project",
-    description=(
-        "API unificadora para integração com sistemas legados do IRS.\n"
-        "Transformação de dados estilo COBOL em JSON moderno.\n"
-        "Autenticação JWT, arquitetura escalável, pronta para nuvem.\n\n"
-        "Desenvolvido por Nívea C. Ribeiro — engenheira fullstack visionária."
+    title=settings.API_TITLE,
+    version=settings.API_VERSION,
+    description=settings.API_DESCRIPTION,
+    openapi_url=f"{settings.API_PREFIX}{settings.API_OPENAPI_URL}",
+    docs_url=(
+        f"{settings.API_PREFIX}{settings.API_DOCS_URL}"
+        if settings.ENABLE_DOCS
+        else None
     ),
-    version="2.0.0",
-    contact={
-        "name": "Nívea C. Ribeiro",
-        "url": "https://github.com/NCRibeiro",
-        "email": "contato@nivea.dev"
-    },
-    license_info={
-        "name": "MIT License",
-        "url": "https://opensource.org/licenses/MIT"
-    },
-    docs_url="/docs" if settings.ENABLE_DOCS else None,
-    redoc_url="/redoc" if settings.ENABLE_DOCS else None
+    redoc_url=(
+        f"{settings.API_PREFIX}{settings.API_REDOC_URL}"
+        if settings.ENABLE_DOCS
+        else None
+    ),
+    debug=settings.DEBUG,
 )
 
-# ────── Middleware de CORS ──────
-# Definição das configurações de CORS, permitindo todas as origens (ajuste conforme necessário)
+# CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Permite todos os domínios (ajuste conforme necessário)
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
-    allow_headers=["*"]
+    allow_headers=["*"],
 )
 
-# ────── Middleware de Segurança ──────
+# middlewares de headers
+
+
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    start = time.time()
+    response = await call_next(request)
+    response.headers["X-Process-Time"] = str(time.time() - start)
+    return response
+
+
 @app.middleware("http")
 async def add_security_headers(request: Request, call_next):
     response = await call_next(request)
-    response.headers["X-Content-Type-Options"] = "nosniff"  # Impede que o navegador interprete o conteúdo como outro tipo
-    response.headers["X-Frame-Options"] = "DENY"  # Impede que a aplicação seja carregada em frames (protege contra clickjacking)
-    response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains"  # Força o uso de HTTPS
+    response.headers.update(
+        {
+            "X-Content-Type-Options": "nosniff",
+            "X-Frame-Options": "DENY",
+            "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+        }
+    )
     return response
 
-# ────── Middleware CSRF ──────
+
 @app.middleware("http")
 async def csrf_token_validation(request: Request, call_next):
     if request.method in ["POST", "PUT", "DELETE"]:
-        csrf_token = request.headers.get("X-CSRF-Token")
-        if not csrf_token or csrf_token != request.cookies.get("csrf_token"):
+        token = request.headers.get("X-CSRF-Token")
+        if not token or token != request.cookies.get("csrf_token"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="CSRF token inválido ou ausente."
+                detail="CSRF token inválido ou ausente.",
             )
-    response = await call_next(request)
-    return response
+    return await call_next(request)
 
-# ────── Registro de Rotas ──────
-app.include_router(auth_router)
-app.include_router(taxpayer_router)
-app.include_router(legacy_router)
-app.include_router(transform_router)
-app.include_router(analytics_router)
 
-# ────── Rota Raiz (diagnóstico) ──────
-@app.get("/", tags=["Root"])
-async def get_root(current_user: Depends(get_current_user)):  # Dependência de autenticação global
+# inclui todas as rotas com prefixo /api/v1
+app.include_router(api_router, prefix=settings.API_PREFIX)
+
+# rota raiz (health / info)
+
+
+@app.get(f"{settings.API_PREFIX}/", tags=["Root"])
+async def get_root(current_user=Depends(get_current_user)):
     return {
         "status": "online",
         "project": "OneAPIIRS - APE",
         "version": app.version,
         "message": "APE está vivo. A integração do legado começou.",
-        "modules": ["auth", "taxpayer", "legacy", "transform", "analytics"],
-        "documentation": {
-            "swagger": "/docs",
-            "redoc": "/redoc"
-        },
         "timestamp": datetime.utcnow().isoformat(),
-        "user": current_user.username  # Exibindo o nome do usuário autenticado
+        "user": getattr(current_user, "username", None),
+        "docs": {
+            "swagger": f"{settings.API_PREFIX}{settings.API_DOCS_URL}",
+            "redoc": f"{settings.API_PREFIX}{settings.API_REDOC_URL}",
+        },
     }
 
-# ────── Tratamento Global de Erros ──────
+
+# tratadores de erro
+@app.exception_handler(RequestValidationError)
+async def validation_exception_handler(request: Request, exc: RequestValidationError):
+
+    logger.error(f"[VALIDATION ERROR] {request.url.path} → {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+        content={"detail": exc.errors(), "body": exc.body},
+    )
+
+
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
     logger.error(f"[ERRO] {request.url.path} → {exc}")
     return JSONResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-        content={
-            "detail": "Erro interno no servidor",
-            "error": str(exc),
-            "path": request.url.path
-        }
+        content={"detail": "Erro interno no servidor", "error": str(exc)},
     )
 
-# ────── Eventos de Ciclo de Vida ──────
+
+# eventos de startup/shutdown
 @app.on_event("startup")
 async def on_startup():
-    # Inicializa o banco de dados (cria as tabelas)
-    logger.info("Iniciando a criação das tabelas no banco de dados...")
+    logger.info("APE iniciando...")
     try:
-        init__db(drop=False)  # Se quiser limpar e recriar as tabelas, passe drop=True
-        logger.info("Tabelas criadas com sucesso.")
+        from app.db.init_db import init_db
+
+        # init_db é síncrono; chama diretamente
+        init_db(drop=False)
+        logger.info("DB ready.")
     except Exception as e:
-        logger.error(f"Erro ao inicializar o banco de dados: {e}")
-    
-    logger.info("APE iniciado — Infraestrutura pronta para integração com legado.")
+        logger.error(f"Erro ao inicializar DB: {e}")
+        raise
+
 
 @app.on_event("shutdown")
 async def on_shutdown():
-    logger.info("APE encerrando — Obrigado por pilotar essa missão, Nívea.")
+    logger.info("APE encerrando — Até a próxima!")
+
+
+# execução direta
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.RELOAD
+    )

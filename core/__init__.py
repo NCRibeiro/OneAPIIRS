@@ -16,17 +16,19 @@ from pathlib import Path
 from typing import Final
 
 import importlib.metadata as _metadata
-from core.config import settings
+from core.settings import settings
 
 
 # ───────────── Versão do Projeto ─────────────
 try:
-    __version__: Final[str] = _metadata.version("ape")
+    __version__: str = _metadata.version("ape")
 except _metadata.PackageNotFoundError:
-    __version__ = "0.0.0-dev"
+    _default_version = "0.0.0"  # Default version if package not found
+    __version__ = _default_version  # Reassignment is now allowed
+    pass  # Ensures the except block is not empty
 
 # ───────────── Ambiente ──────────────────────
-ENV: Final[str] = os.getenv("APE_ENV", "development").lower()
+ENV: Final[str] = os.getenv("APP_ENV", "development").lower()
 PROJECT_ROOT: Final[Path] = Path(__file__).resolve().parent.parent
 
 # ───────────── Logger Global ─────────────────
@@ -54,7 +56,7 @@ __all__ = [
     "settings",
 ]
 
-__version__ = __version__
+# __version__ is already defined above as a Final variable.
 __author__ = "Nívea C. Ribeiro"
 __license__ = "MIT"
 __copyright__ = "Copyright 2023 Nívea C. Ribeiro"
@@ -67,6 +69,4 @@ __email__ = "contato@nivea.dev"
 __github_username__ = "NCRibeiro"
 __status__ = "Development"
 __title__ = "OneAPIIRS — APE Project"
-
-
-
+__version__ = __version__  # Ensure __version__ is defined here

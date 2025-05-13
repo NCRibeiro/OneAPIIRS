@@ -1,8 +1,10 @@
-"""
-analytics.py – Rotas de relatórios/insights fiscais (Fase 5)
-"""
+# app/routers/analytics.py
 
-from fastapi import APIRouter, status
+from fastapi import APIRouter, Depends, status
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.settings import settings
+from app.dependencies import get_db, get_current_user
 from app.services.analytics_service import (
     generate_summary,
     get_monthly_distribution,
@@ -15,8 +17,9 @@ from app.schemas.analytics import (
 )
 
 router = APIRouter(
-    prefix="/api/v1/analytics",
+    prefix=f"{settings.api_prefix}/analytics",
     tags=["Analytics"],
+    dependencies=[Depends(get_current_user)],
     responses={404: {"description": "Not found"}},
 )
 
@@ -27,9 +30,11 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     summary="Resumo analítico geral",
 )
-def analytics_summary() -> AnalyticsSummary:
+async def analytics_summary(
+    db: AsyncSession = Depends(get_db),
+) -> AnalyticsSummary:
     """Retorna métricas agregadas (totais, médias, etc.)."""
-    return generate_summary()
+    return await generate_summary(db)
 
 
 @router.get(
@@ -38,9 +43,11 @@ def analytics_summary() -> AnalyticsSummary:
     status_code=status.HTTP_200_OK,
     summary="Distribuição mensal",
 )
-def analytics_by_month() -> MonthlyBreakdown:
+async def analytics_by_month(
+    db: AsyncSession = Depends(get_db),
+) -> MonthlyBreakdown:
     """Retorna distribuição de valores por mês/ imposto."""
-    return get_monthly_distribution()
+    return await get_monthly_distribution(db)
 
 
 @router.get(
@@ -49,6 +56,8 @@ def analytics_by_month() -> MonthlyBreakdown:
     status_code=status.HTTP_200_OK,
     summary="Erros / Inconsistências de auditoria",
 )
-def analytics_errors() -> AuditErrorList:
+async def analytics_errors(
+    db: AsyncSession = Depends(get_db),
+) -> AuditErrorList:
     """Lista transações marcadas com inconsistência ou falha de auditoria."""
-    return list_audit_errors()
+    return await list_audit_errors(db)

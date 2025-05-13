@@ -1,0 +1,23 @@
+// .vscode/settings.json
+
+{
+  // Adiciona ao path de import a raiz do projeto e os pacotes app/ e core/
+  "python.analysis.extraPaths": [
+    ".",     // inclui config_env.py, dependencies.py, run.bat, etc.
+    "app",
+    "core"
+  ],
+
+  // Profundidade para indexação de pacotes (ajuda em subpastas)
+  "python.analysis.packageIndexDepths": {
+    "app": 2,
+    "core": 1
+  },
+  "git.ignoreLimitWarning": true,
+  "workbench.editor.autoLockGroups": {
+    "default": true
+  },
+  "workbench.editor.alwaysShowEditorActions": true
+}
+
+  

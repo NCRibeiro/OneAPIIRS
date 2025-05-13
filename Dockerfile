@@ -1,25 +1,22 @@
-# Etapa de construção
+# ────────────────────────────────────────────────────────
+# Stage 1: Builder — instala dependências Python
+# ────────────────────────────────────────────────────────
 FROM python:3.13-alpine AS builder
 
-WORKDIR /app
+WORKDIR /install
 
-ENV PYTHONDONTWRITEBYTECODE=1 \
-    PYTHONUNBUFFERED=1
+# 1) Instala dependências de sistema e atualiza pip
+RUN apk add --no-cache \
+      build-base libffi-dev musl-dev python3-dev postgresql-dev openssl-dev \
+    && pip install --upgrade pip
 
-RUN apk update && apk add --no-cache \
-    build-base gcc libffi-dev musl-dev \
-    python3-dev libpq libpq-dev openssl-dev \
-    && rm -rf /var/cache/apk/*
-
+# 2) Copia e instala as bibliotecas Python declaradas em requirements.txt
 COPY requirements.txt .
+RUN pip install --prefix=/install -r requirements.txt
 
-# Instala pacotes na pasta /install
-RUN pip install --upgrade pip && \
-    pip install --prefix=/install -r requirements.txt
-
-# ──────────────────────────────────────────────
-# Etapa de runtime
-# ──────────────────────────────────────────────
+# ────────────────────────────────────────────────────────
+# Stage 2: Runtime — imagem enxuta para rodar a aplicação
+# ────────────────────────────────────────────────────────
 FROM python:3.13-alpine
 
 WORKDIR /app
@@ -28,28 +25,15 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
+# Bibliotecas de runtime para Postgres
+RUN apk add --no-cache postgresql-libs libpq
+
+# Copia pacotes Python instalados no builder e o código da aplicação
 COPY --from=builder /install /usr/local
 
 COPY . .
 
+# Exponha a porta da API
 EXPOSE 8000
-EXPOSE 8050
-
-ARG ENTRY=api
-ENV ENTRYPOINT_MODE=${ENTRY}
-
-CMD ["sh", "-c", "\
-    if [ ! -f app/main.py ]; then \
-        echo '[ERRO] Arquivo app/main.py não encontrado! Verifique a estrutura do projeto.' && exit 1; \
-    fi; \
-    if [ \"$ENTRYPOINT_MODE\" = \"dash\" ]; then \
-        if [ ! -f app/dashboard/dashboard.py ]; then \
-            echo '[ERRO] Arquivo app/dashboard/dashboard.py não encontrado! Verifique a estrutura do projeto.' && exit 1; \
-        fi; \
-        echo '[INFO] Iniciando Dashboard...'; \
-        python app/dashboard/dashboard.py; \
-    else \
-        echo '[INFO] Iniciando API FastAPI...'; \
-        uvicorn app.main:app --host 0.0.0.0 --port 8000; \
-    fi"]
-
+# Inicia o Uvicorn sem envolver shell, passando só os args que o uvicorn entende
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

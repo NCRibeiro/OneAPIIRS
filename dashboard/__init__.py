@@ -1,4 +1,4 @@
-# app/dashboard/__init__.py
+# dashboard/__init__.py
 
 """
 Módulo responsável pela interface gráfica do APE Project.

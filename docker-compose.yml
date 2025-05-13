@@ -1,44 +1,8 @@
-version: '3.8'
-
 services:
-  api:
-    build:
-      context: .
-      dockerfile: Dockerfile
-    container_name: ape-api
-    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-    ports:
-      - "8000:8000"
-    volumes:
-      - .:/app
-    depends_on:
-      - db
-    env_file:
-      - .env
-    environment:
-      - PYTHONPATH=/app
-      - DATABASE_URL=postgresql://postgres:postgres@db:5432/ape_db
-      - ONEAPIIRS_SECRET_KEY=segredo_super_secreto
-      - ONEAPIIRS_PUBLIC_KEY=   # pode deixar vazio se não usar
-      - ONEAPIIRS_ALGORITHM=HS256
-      - ONEAPIIRS_TOKEN_EXPIRE_MIN=30
-      - DATABASE_NAME=ape_db
-      - DATABASE_USER=postgres
-      - DATABASE_PASSWORD=postgres
-      - DATABASE_HOST=db
-      - DATABASE_PORT=5432
-      - DATABASE_DRIVER=postgresql
-      - APP_ENV=development
-      - DEBUG=True
-      - TESTING=False
-      - API_VERSION=v1
-      - API_PREFIX=/api/v1
-      - ENABLE_DOCS=True
-    networks:
-      - ape_network  
+
 
   db:
-    image: postgres:14-alpine
+    image: postgres:16
     container_name: ape-db
     restart: always
     environment:
@@ -52,10 +16,62 @@ services:
     networks:
       - ape_network
 
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: ape-api:latest
+    container_name: ape-api
+    working_dir: /app
+    volumes:
+      - .:/app
+    depends_on:
+      - db
+    ports:
+      - "8000:8000"
+    # ─── Variáveis de ambiente obrigatórias (Pydantic) ───
+    environment:
+      # JWT / Segurança
+      ONEAPIIRS_SECRET_KEY: "ML9SaQ8VSfZouSE9XX3G6z0syQh_Uj2GcO21aGHJSbk"
+      ONEAPIIRS_REFRESH_SECRET_KEY: "NupNDm2MR8RjWGWP06A-auT7y1mbap3DCmTomPbabH8"
+      ONEAPIIRS_ALGORITHM: "HS256"
+      ONEAPIIRS_ACCESS_TOKEN_EXPIRE_MIN: "30"
+      ONEAPIIRS_REFRESH_TOKEN_EXPIRE_MIN: "1440"
+      # Banco de dados
+      DATABASE_URL: "postgresql+asyncpg://postgres:postgres@db:5432/ape_db"
+      # Execução / Ambiente
+      APP_ENV: "development"
+      DEBUG: "true"
+      RELOAD: "true"
+      HOST: "0.0.0.0"
+      PORT: "8000"
+      WORKERS: "1"
+      WORKER_CLASS: "uvicorn.workers.UvicornWorker"
+      # FastAPI • Metadados
+      API_PREFIX: "/api/v1"
+      API_TITLE: "OneAPIIRS — APE Project"
+      API_DESCRIPTION: "API unificadora para integração com sistemas legados do IRS."
+      API_VERSION: "v1"
+      API_DOCS_URL: "/docs"
+      API_REDOC_URL: "/redoc"
+      API_OPENAPI_URL: "/openapi.json"
+      ENABLE_DOCS: "true"
+      # CORS e Logging
+      CORS_ORIGINS: ""
+      LOG_LEVEL: "info"
+    # ─── Comando de inicialização Uvicorn ───
+    command: >
+      uvicorn main:app
+      --host 0.0.0.0
+      --port 8000
+      --reload
+      --workers 1
+    networks:
+      - ape_network
+
 volumes:
   postgres_data:
 
-
 networks:
   ape_network:
-

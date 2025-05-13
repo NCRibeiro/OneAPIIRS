@@ -12,7 +12,7 @@ from .fake_db import (
     get_all_records,
     get_records_by_system,
     get_supported_systems,
-    get_legacy_metadata
+    get_legacy_metadata,
 )
 
 __all__ = [
@@ -21,6 +21,5 @@ __all__ = [
     "get_records_by_system",
     "get_supported_systems",
     "legacy_data",
-    "legacy_metadata"
+    "legacy_metadata",
 ]
-
