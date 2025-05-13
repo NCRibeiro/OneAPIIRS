@@ -5,28 +5,20 @@ Agrega todas as rotas da aplicação com possibilidade de controle de versões.
 """
 
 from fastapi import APIRouter
-from app.routes import (
-    auth,
-    audit,
-    legacy,
-    modern_routes,
-    taxpayer,
-    transform,
-    external,
-    user,
-)
 
+from app.routes import (audit, auth, external, legacy, modern_routes, taxpayer,
+                        transform, user)
 from core.settings import settings
 
+from .analytics import router as analytics_router
+from .audit import router as audit_router
 # Importação dos routers de cada módulo
 from .auth import router as auth_router
-from .audit import router as audit_router
+from .external import router as external_router
 from .legacy import router as legacy_router
 from .modern_routes import router as modern_router
 from .taxpayer import router as taxpayer_router
 from .transform import router as transform_router
-from .external import router as external_router
-from .analytics import router as analytics_router
 from .user import router as user_router
 
 # Roteador principal da API com prefixo versionado

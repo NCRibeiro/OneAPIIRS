@@ -5,14 +5,16 @@ tools/relatorio_graficos.py — Geração de relatórios e gráficos fiscais
 Uso:
     python tools/relatorio_graficos.py
 """
-import pandas as pd
+import logging
+
 import numpy as np
+import pandas as pd
 import plotly.express as px
+from dotenv import load_dotenv
 from fpdf import FPDF
 from sqlalchemy import create_engine
+
 from core.settings import settings
-from dotenv import load_dotenv
-import logging
 
 # Carrega variáveis de ambiente e configurações
 load_dotenv()

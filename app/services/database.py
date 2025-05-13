@@ -4,24 +4,17 @@ Mantém coleções em memória para taxpayers, legacy records,
 modern records e logs de auditoria.
 """
 
-from typing import (
-    List,
-    Optional,
-)  # Fixed: Split long line (import from typing)
-
-
-from uuid import uuid4
 from datetime import datetime
+from typing import (List,  # Fixed: Split long line (import from typing)
+                    Optional)
+from uuid import uuid4
 
-from app.schemas.taxpayer import TaxpayerCreate, TaxpayerRead, TaxpayerBatchResponse
-from app.schemas.legacy import LegacyEntry, LegacyResponse, LegacyBatchResponse
-from app.schemas.modern import (
-    ModernCreate,
-    ModernRead,
-    ModernResponse,
-    ModernBatchResponse,
-)
 from app.schemas.analytics import AuditError
+from app.schemas.legacy import LegacyBatchResponse, LegacyEntry, LegacyResponse
+from app.schemas.modern import (ModernBatchResponse, ModernCreate, ModernRead,
+                                ModernResponse)
+from app.schemas.taxpayer import (TaxpayerBatchResponse, TaxpayerCreate,
+                                  TaxpayerRead)
 
 # --------------------------------------------------
 # Bancos de dados simulados em memória

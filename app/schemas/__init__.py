@@ -3,27 +3,17 @@ Schemas centralizados para validação e serialização de dados do APE.
 Agrupa todos os modelos utilizados na aplicação.
 """
 
+from .analytics import (AnalyticsSummary, AuditError, AuditErrorList,
+                        MonthlyBreakdown, MonthlyRecord)
+from .audit import AuditReport, AuditSummary, SuspiciousRecord
 from .auth import Token, TokenData
-from .user import UserCreate, UserRead, UserInDB, RoleEnum
-from .taxpayer import TaxpayerCreate, TaxpayerRead, TaxpayerBatchResponse
-from .legacy import LegacyEntry, LegacyResponse, LegacyBatchResponse
-from .modern import (
-    ModernEntry,
-    ModernCreate,
-    ModernRead,
-    ModernResponse,
-    ModernBatchResponse,
-)
+from .external import BanksResponse, ExternalCheckResult, SupportedBank
+from .legacy import LegacyBatchResponse, LegacyEntry, LegacyResponse
+from .modern import (ModernBatchResponse, ModernCreate, ModernEntry,
+                     ModernRead, ModernResponse)
+from .taxpayer import TaxpayerBatchResponse, TaxpayerCreate, TaxpayerRead
 from .transform import RawCOBOLInput, TransformedResponse
-from .external import ExternalCheckResult, SupportedBank, BanksResponse
-from .analytics import (
-    AnalyticsSummary,
-    MonthlyRecord,
-    MonthlyBreakdown,
-    AuditError,
-    AuditErrorList,
-)
-from .audit import SuspiciousRecord, AuditSummary, AuditReport
+from .user import RoleEnum, UserCreate, UserInDB, UserRead
 
 __all__ = [
     # Auth

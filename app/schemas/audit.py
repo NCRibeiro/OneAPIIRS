@@ -1,8 +1,9 @@
 # app/schemas/audit.py
 
-from pydantic import BaseModel, Field
-from typing import List
 from datetime import datetime
+from typing import List
+
+from pydantic import BaseModel, Field
 
 
 class SuspiciousRecord(BaseModel):

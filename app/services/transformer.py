@@ -5,7 +5,7 @@ Funções para transformar dados legados em estruturas modernas.
 """
 
 import re
-from datetime import datetime, date
+from datetime import date, datetime
 from typing import Dict, Union
 
 from app.schemas.legacy import LegacyEntry

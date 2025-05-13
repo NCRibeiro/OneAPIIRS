@@ -3,18 +3,13 @@
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.dependencies import get_current_user, get_db
+from app.schemas.analytics import (AnalyticsSummary, AuditErrorList,
+                                   MonthlyBreakdown)
+from app.services.analytics_service import (generate_summary,
+                                            get_monthly_distribution,
+                                            list_audit_errors)
 from core.settings import settings
-from app.dependencies import get_db, get_current_user
-from app.services.analytics_service import (
-    generate_summary,
-    get_monthly_distribution,
-    list_audit_errors,
-)
-from app.schemas.analytics import (
-    AnalyticsSummary,
-    MonthlyBreakdown,
-    AuditErrorList,
-)
 
 router = APIRouter(
     prefix=f"{settings.api_prefix}/analytics",

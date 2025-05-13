@@ -5,11 +5,13 @@ Uso:
     python tools/visualizar_dados.py
 """
 import logging
+
+import numpy as np
+import pandas as pd
+import plotly.express as px
 from dotenv import load_dotenv
 from sqlalchemy import create_engine
-import pandas as pd
-import numpy as np
-import plotly.express as px
+
 from core.settings import settings
 
 # Carrega .env e configurações

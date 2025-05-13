@@ -18,12 +18,13 @@ import asyncio
 import logging
 from typing import Optional
 
-from sqlalchemy.ext.asyncio import AsyncEngine
 from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.ext.asyncio import AsyncEngine
 
-from .session import engine, AsyncSessionLocal, get_db  # noqa: F401
-from app.db.models import Base  # noqa: F401
 import app.db.models  # noqa: F401 Register models for Base.metadata
+from app.db.models import Base  # noqa: F401
+
+from .session import AsyncSessionLocal, engine, get_db  # noqa: F401
 
 # Configura o logger para este módulo
 logger = logging.getLogger("app.db")

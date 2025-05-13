@@ -4,9 +4,10 @@ Módulo de dados simulados: centraliza registros e metadados de
 sistemas legados.
 """
 
+from typing import Any, Dict, List
+
 from .legacy_mainframe import legacy_mainframe
 from .legacy_x99 import legacy_x99
-from typing import Dict, List, Any
 
 # --------------------------------------------------
 # Dados legados centralizados por sistema

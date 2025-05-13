@@ -1,15 +1,14 @@
 # app/routers/modern.py
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from core.settings import settings  # Ensure this import is present
-
-from dependencies import get_db, get_current_user
-
-from app.db.models import ModernRecord as ModernModel, Taxpayer as TaxpayerModel
+from app.db.models import ModernRecord as ModernModel
+from app.db.models import Taxpayer as TaxpayerModel
 from app.schemas.modern import ModernCreate, ModernRead
+from core.settings import settings  # Ensure this import is present
+from dependencies import get_current_user, get_db
 
 router = APIRouter(
     prefix=f"{settings.api_prefix}/modern",

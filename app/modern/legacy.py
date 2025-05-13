@@ -1,7 +1,7 @@
 # modern/legacy.py
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, func
 from modern.base import Base  # Ajuste para importar do seu módulo modern/base
+from sqlalchemy import Column, DateTime, Float, Integer, String, func
 
 
 class LegacyRecord(Base):

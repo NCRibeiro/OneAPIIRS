@@ -1,15 +1,12 @@
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
-from core.settings import settings
-from dependencies import (
-    get_db,
-    get_current_user,
-)
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.db.models import LegacyData as LegacyModel
 from app.db.models import TaxpayerData as TaxpayerModel
 from app.schemas.legacy import LegacyCreate, LegacyEntry
+from core.settings import settings
+from dependencies import get_current_user, get_db
 
 router = APIRouter(
     prefix=f"{settings.api_prefix}/legacy",

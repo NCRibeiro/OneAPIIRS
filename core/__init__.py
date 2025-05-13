@@ -10,14 +10,13 @@ desacopladas, crie subpacotes específicos.
 
 from __future__ import annotations
 
+import importlib.metadata as _metadata
 import logging
 import os
 from pathlib import Path
 from typing import Final
 
-import importlib.metadata as _metadata
 from core.settings import settings
-
 
 # ───────────── Versão do Projeto ─────────────
 try:

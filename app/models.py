@@ -5,9 +5,9 @@ e geração de dados do APE.
 """
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, Float, ForeignKey, DateTime
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime, Float, ForeignKey, Integer, String
 from sqlalchemy.ext.declarative import as_declarative
+from sqlalchemy.orm import relationship
 
 
 # Define Base as the declarative base for ORM models

@@ -12,9 +12,9 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.settings import settings
 from app.db import get_db
 from app.models import User
+from core.settings import settings
 
 # Configuração do OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/token")

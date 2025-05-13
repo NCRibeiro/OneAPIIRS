@@ -5,13 +5,13 @@ OneAPIIRS — Configurações Globais
 Define todas as variáveis de ambiente e metadados da aplicação.
 Usa `config_env.py` para injeção manual de variáveis.
 """
-import config_env  # noqa: F401 (popula variáveis em os.environ)
 from datetime import timedelta
 from typing import List, Optional
 
+import config_env  # noqa: F401 (popula variáveis em os.environ)
+from pydantic import AnyHttpUrl, validator
 # Pydantic v2: BaseSettings movido para pydantic-settings
 from pydantic_settings import BaseSettings
-from pydantic import validator, AnyHttpUrl
 
 
 class Settings(BaseSettings):

@@ -1,19 +1,20 @@
 # app/routers/auth.py
 
-from fastapi import APIRouter, Depends, HTTPException, status, Response
-from fastapi.security import OAuth2PasswordRequestForm
-from jose import jwt
-from datetime import datetime, timedelta as _tdelta
-
-# Removed unused import of settings
-from core.logging_config import get_logger
-from dependencies import get_current_user
-from app.schemas.auth import Token
-
 # Removed duplicate import of get_logger
 import secrets
 import uuid
+from datetime import datetime
+from datetime import timedelta as _tdelta
+
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from fastapi.responses import JSONResponse
+from fastapi.security import OAuth2PasswordRequestForm
+from jose import jwt
+
+from app.schemas.auth import Token
+# Removed unused import of settings
+from core.logging_config import get_logger
+from dependencies import get_current_user
 
 # Add your existing settings code here
 

@@ -1,13 +1,10 @@
-from fastapi import APIRouter, Depends, Query, HTTPException, status
-from core.settings import settings
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+
 from app.dependencies import get_current_user
 from app.schemas.external import ExternalCheckResult
-
-from app.services.external import (
-    validate_cpf_externally,
-    fetch_income_score,
-    check_debts,
-)
+from app.services.external import (check_debts, fetch_income_score,
+                                   validate_cpf_externally)
+from core.settings import settings
 
 router = APIRouter(
     prefix=f"{settings.api_prefix}/external",

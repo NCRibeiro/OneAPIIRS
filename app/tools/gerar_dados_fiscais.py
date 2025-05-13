@@ -8,14 +8,14 @@ Uso:
 import logging
 from datetime import datetime
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
+from app.db.models import AuditLog, LegacyData, TaxpayerData
 # Importa configurações e modelos do projeto
 from core.settings import settings
-from app.db.models import TaxpayerData, LegacyData, AuditLog
 
 # Configuração de logging
 logging.basicConfig(

@@ -2,8 +2,9 @@
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from app.dependencies import get_db, get_current_user
+
 from app.db.models import Taxpayer as TaxpayerModel
+from app.dependencies import get_current_user, get_db
 from app.schemas.taxpayer import TaxpayerCreate, TaxpayerRead
 
 router = APIRouter(prefix="/taxpayers", tags=["Taxpayers"])

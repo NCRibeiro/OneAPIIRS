@@ -1,6 +1,6 @@
 import logging
-from typing import Dict
 from datetime import datetime
+from typing import Dict
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer

@@ -1,7 +1,7 @@
 # modern/modern.py
 
-from sqlalchemy import Column, String, Integer, Float, DateTime, func
 from modern.base import Base
+from sqlalchemy import Column, DateTime, Float, Integer, String, func
 
 
 class ModernRecord(Base):

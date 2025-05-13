@@ -1,18 +1,16 @@
 # app/routes/audit.py
 
-from fastapi import APIRouter, Depends, status
 from datetime import datetime
 from uuid import uuid4
 
-# Removed unused import of settings
-from dependencies import get_current_user
-
-# Removed redundant import of get_db
-from app.services.auditor import run_audit
+from fastapi import APIRouter, Depends, status
 
 # Removed redundant import of get_current_user
 from app.schemas.audit import AuditReport, AuditSummary, SuspiciousRecord
-
+# Removed redundant import of get_db
+from app.services.auditor import run_audit
+# Removed unused import of settings
+from dependencies import get_current_user
 
 router = APIRouter(
     prefix="/api/audit",

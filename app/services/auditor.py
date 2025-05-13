@@ -2,11 +2,11 @@
 """
 services/auditor.py – Regras de auditoria para dados legados.
 """
-from datetime import datetime
 from collections import Counter
+from datetime import datetime
 from typing import List
 
-from app.schemas.audit import AuditReport, SuspiciousRecord, AuditSummary
+from app.schemas.audit import AuditReport, AuditSummary, SuspiciousRecord
 from app.schemas.legacy import LegacyEntry
 
 

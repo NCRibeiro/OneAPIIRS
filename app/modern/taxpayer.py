@@ -1,9 +1,9 @@
 # modern/taxpayer.py
 
-from sqlalchemy import Column, String, DateTime
+from modern.base import Base
+from sqlalchemy import Column, DateTime, String
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
-from modern.base import Base
 
 
 class Taxpayer(Base):

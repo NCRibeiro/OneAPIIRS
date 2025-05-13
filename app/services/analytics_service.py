@@ -6,17 +6,13 @@ analytics_service.py – Lógica de agregação para o módulo Analytics.
 from collections import defaultdict
 from datetime import datetime
 
-# Importação de bancos simulados em memória
-from .database import taxpayer_db, legacy_db, modern_db, audit_log
-
 # Schemas de resposta
-from app.schemas.analytics import (
-    AnalyticsSummary,
-    MonthlyBreakdown,
-    MonthlyRecord,
-    AuditError,
-    AuditErrorList,
-)
+from app.schemas.analytics import (AnalyticsSummary, AuditError,
+                                   AuditErrorList, MonthlyBreakdown,
+                                   MonthlyRecord)
+
+# Importação de bancos simulados em memória
+from .database import audit_log, legacy_db, modern_db, taxpayer_db
 
 # ────────────────────────────────────────────────────────────────
 # Funções de serviço

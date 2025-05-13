@@ -1,9 +1,10 @@
 # app/schemas/transform.py
 
-from pydantic import BaseModel, Field
-from typing import Optional, Dict
 from datetime import datetime
+from typing import Dict, Optional
 from uuid import UUID
+
+from pydantic import BaseModel, Field
 
 
 class RawCOBOLInput(BaseModel):

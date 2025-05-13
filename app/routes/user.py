@@ -1,14 +1,14 @@
 # app/routers/user.py
 
-from fastapi import APIRouter, HTTPException, Depends, status
+from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
-from core.settings import settings
-from app.dependencies import get_db, get_current_user
 from app.db.models import User as UserModel
+from app.dependencies import get_current_user, get_db
 from app.schemas.user import UserCreate, UserResponse
 from core.logging_config import get_logger
+from core.settings import settings
 
 logger = get_logger("user")
 

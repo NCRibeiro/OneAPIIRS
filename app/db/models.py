@@ -1,15 +1,16 @@
 # models.py
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING  # For type hinting during static analysis
 
 if TYPE_CHECKING:
     pass  # LegacyData is defined in the same module, no import needed
 from datetime import datetime
-from typing import Optional, List
+from typing import List, Optional
+
 from sqlalchemy import DateTime, ForeignKey, Integer, Numeric, String, func
-from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.orm import DeclarativeBase
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
 class Base(DeclarativeBase):

@@ -3,25 +3,26 @@
 OneAPIIRS — Módulo Principal do Projeto APE
 """
 
+import time
+from datetime import datetime
+
 # 1) Injeta variáveis de ambiente (config_env.py deve popular os.environ)
 import config_env  # noqa: F401
-
-# 2) Importa e instancia configurações (settings.py)
-from core.settings import settings
-
-# 3) Importa e instancia o app FastAPI
-
-
-from fastapi import FastAPI, Request, Depends, HTTPException, status
+from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
-import time
-from datetime import datetime
+
 from app.routes import api_router
-from dependencies import get_current_user
 from core.logging_config import get_logger
+# 2) Importa e instancia configurações (settings.py)
+from core.settings import settings
+from dependencies import get_current_user
+
+# 3) Importa e instancia o app FastAPI
+
+
 
 # configura logger
 logger = get_logger("ape-api")
