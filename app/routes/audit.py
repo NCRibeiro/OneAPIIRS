@@ -1,20 +1,17 @@
-# app/routes/audit.py
-
-from datetime import datetime
-from uuid import uuid4
-
 from fastapi import APIRouter, Depends, status
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-# Removed redundant import of get_current_user
-from app.schemas.audit import AuditReport, AuditSummary, SuspiciousRecord
-# Removed redundant import of get_db
+from app.schemas.legacy import LegacyEntry
+from app.models.legacy import LegacyRecord as LegacyModel
 from app.services.auditor import run_audit
-# Removed unused import of settings
 from dependencies import get_current_user
+from app.db.session import get_db
+from app.schemas.audit import AuditReport
+
 
 router = APIRouter(
-    prefix="/api/audit",
-    # Replace with a hardcoded prefix or the correct attribute
+    prefix="/api/v1/audit",
     tags=["Auditoria Fiscal"],
     dependencies=[Depends(get_current_user)],
     responses={404: {"description": "Not found"}},
@@ -27,23 +24,15 @@ router = APIRouter(
     status_code=status.HTTP_200_OK,
     summary="Executa auditoria nos dados legados e retorna relatório",
 )
-async def audit_legacy_data():
+async def audit_legacy_data(db: AsyncSession = Depends(get_db)) -> AuditReport:
     """
     Executa uma auditoria nos dados legados para identificar
     registros suspeitos.
-
-    A lógica atual detecta:
-    - Renda negativa
-    - CPF com formato inválido
-    - Nome vazio ou ausente
     """
-    result = await run_audit()
-    return AuditReport(
-        id=str(uuid4()),
-        summary=AuditSummary(
-            total_checked=result["total_checked"],
-            suspicious_count=len(result["suspicious"]),
-            audit_date=datetime.utcnow(),
-        ),
-        suspicious=[SuspiciousRecord(**record) for record in result["suspicious"]],
-    )
+    result = await db.execute(select(LegacyModel))
+    raw_data = result.scalars().all()
+
+    # Converte modelo ORM → schema Pydantic
+    legacy_entries = [LegacyEntry.model_validate(obj) for obj in raw_data]
+
+    return run_audit(data=legacy_entries)

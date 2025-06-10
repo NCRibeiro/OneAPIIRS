@@ -13,7 +13,7 @@ import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
-from app.db.models import AuditLog, LegacyData, TaxpayerData
+from app.models import AuditLog, LegacyData, TaxpayerData
 # Importa configurações e modelos do projeto
 from core.settings import settings
 

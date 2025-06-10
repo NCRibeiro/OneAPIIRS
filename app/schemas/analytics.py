@@ -1,43 +1,37 @@
-# app/schemas/analytics.py
-
-from typing import List
-
+from typing import List, Annotated
 from pydantic import BaseModel, Field
 
 
 class AnalyticsSummary(BaseModel):
-    total_taxpayers: int = Field(
-        ..., description="Número total de contribuintes cadastrados"
-    )
-    total_legacy_records: int = Field(
-        ..., description="Número total de registros legados processados"
-    )
-    total_modern_records: int = Field(
-        ..., description="Número total de registros modernizados"
-    )
-
-    error_rate_percent: float = Field(
-        ..., description="Percentual de erros/inconsistências detectadas"
-    )
+    """Resumo geral dos dados processados e analisados."""
+    total_taxpayers: Annotated[int, ...]
+    total_legacy_records: Annotated[int, ...]
+    total_modern_records: Annotated[int, ...]
+    error_rate_percent: Annotated[float, ...]
 
 
 class MonthlyRecord(BaseModel):
-    month: str = Field(..., description="Mês no formato AAAA-MM")
-    count: int = Field(..., description="Quantidade de registros no mês")
+    month: Annotated[str, ...]
+    count: Annotated[int, ...]
 
 
 class MonthlyBreakdown(BaseModel):
-    records_by_month: List[MonthlyRecord] = Field(
-        ..., description="Lista de contagens mensais"
-    )
+    records_by_month: Annotated[List[MonthlyRecord], ...]
 
 
 class AuditError(BaseModel):
-    taxpayer_id: int = Field(..., description="ID do contribuinte com erro")
-    issue: str = Field(..., description="Descrição do problema detectado")
+    taxpayer_id: Annotated[int, ...]
+    issue: Annotated[str, ...]
 
 
 class AuditErrorList(BaseModel):
-    errors: List[AuditError] = Field(
-        ..., description="Lista de erros/inconsistências de auditoria"
-    )
+    errors: Annotated[List[AuditError], ...]
+
+
+__all__ = [
+    "AnalyticsSummary",
+    "MonthlyRecord",
+    "MonthlyBreakdown",
+    "AuditError",
+    "AuditErrorList",
+]

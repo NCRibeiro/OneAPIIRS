@@ -1,36 +1,43 @@
-# app/schemas/audit.py
-
-from datetime import datetime
-from typing import List
-
+from datetime import datetime, date
+from typing import List, Annotated
 from pydantic import BaseModel, Field
 
 
 class SuspiciousRecord(BaseModel):
-    id: str = Field(..., description="ID do registro suspeito (UUID)")
-    taxpayer_id: int = Field(..., description="ID do contribuinte associado")
-    name: str = Field(..., description="Nome do contribuinte")
-    cpf: str = Field(..., description="CPF do contribuinte")
-    reason: str = Field(..., description="Motivo da suspeita")
+    id: Annotated[str, ...]
+    name: Annotated[str, ...]
+    cpf: Annotated[str, ...]
+    taxpayer_id: Annotated[int, ...]
+    reason: Annotated[str, ...]
 
 
 class AuditSummary(BaseModel):
-    total_checked: int = Field(..., description="Total de registros verificados")
-
-    suspicious_count: int = Field(
-        ..., description="Quantidade de registros suspeitos encontrados"
-    )
-
-    audit_date: datetime = Field(
-        ..., description="Data e hora em que a auditoria foi realizada (UTC)"
-    )
+    total_checked: Annotated[int, ...]
+    suspicious_count: Annotated[int, ...]
+    audit_date: Annotated[date, ...]
 
 
 class AuditReport(BaseModel):
-    id: str = Field(..., description="Identificador único do relatório de auditoria")
+    id: Annotated[str, ...]
+    total_records: Annotated[int, ...]
+    total_suspect: Annotated[int, ...]
+    suspicious: Annotated[List[SuspiciousRecord], ...]
+    summary: Annotated[AuditSummary, ...]
 
-    summary: AuditSummary = Field(..., description="Resumo da auditoria")
 
-    suspicious: List[SuspiciousRecord] = Field(
-        default_factory=list, description="Lista de registros suspeitos"
-    )
+class AuditError(BaseModel):
+    taxpayer_id: Annotated[int, Field(description="ID do contribuinte com erro")]
+    issue: Annotated[str, Field(description="Descrição resumida do erro")]
+
+
+class AuditErrorList(BaseModel):
+    errors: List[AuditError]
+
+
+__all__ = [
+    "SuspiciousRecord",
+    "AuditSummary",
+    "AuditReport",
+    "AuditError",
+    "AuditErrorList",
+]

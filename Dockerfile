@@ -1,23 +1,37 @@
-# ────────────────────────────────────────────────────────
-# Stage 1: Builder — instala dependências Python
-# ────────────────────────────────────────────────────────
-FROM python:3.13-alpine AS builder
+# ────────────────────────────────────────────────
+# Stage 1 — Builder
+# ────────────────────────────────────────────────
+FROM python:3.11-slim AS builder
 
 WORKDIR /install
 
-# 1) Instala dependências de sistema e atualiza pip
-RUN apk add --no-cache \
-      build-base libffi-dev musl-dev python3-dev postgresql-dev openssl-dev \
-    && pip install --upgrade pip
-
-# 2) Copia e instala as bibliotecas Python declaradas em requirements.txt
+# Copia arquivos de dependências primeiro (melhora o cache do Docker)
 COPY requirements.txt .
-RUN pip install --prefix=/install -r requirements.txt
+COPY requirements-dev.txt .
 
-# ────────────────────────────────────────────────────────
-# Stage 2: Runtime — imagem enxuta para rodar a aplicação
-# ────────────────────────────────────────────────────────
-FROM python:3.13-alpine
+# Atualiza pip e instala dependências
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+    gcc \
+    libffi-dev \
+    libpq-dev \
+    libssl-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libxml2-dev \
+    libxslt1-dev \
+    libyaml-dev \
+    curl \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+RUN pip install --upgrade pip \
+    && pip install --prefix=/install -r requirements.txt -r requirements-dev.txt
+
+# ────────────────────────────────────────────────
+# Stage 2 — Runtime Final
+# ────────────────────────────────────────────────
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -25,15 +39,23 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app
 
-# Bibliotecas de runtime para Postgres
-RUN apk add --no-cache postgresql-libs libpq
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libpq-dev \
+    libssl-dev \
+    libffi-dev \
+    libjpeg-dev \
+    zlib1g-dev \
+    libyaml-dev \
+    && rm -rf /var/lib/apt/lists/*
 
-# Copia pacotes Python instalados no builder e o código da aplicação
+# Copia dependências Python instaladas
 COPY --from=builder /install /usr/local
 
+# Copia o código da aplicação
 COPY . .
 
-# Exponha a porta da API
 EXPOSE 8000
-# Inicia o Uvicorn sem envolver shell, passando só os args que o uvicorn entende
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+# Comando para executar a aplicação
+# CMD ["python", "main.py"]
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

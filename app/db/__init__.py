@@ -21,8 +21,8 @@ from typing import Optional
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncEngine
 
-import app.db.models  # noqa: F401 Register models for Base.metadata
-from app.db.models import Base  # noqa: F401
+import app.models  # noqa: F401 Register models for Base.metadata
+from app.models import Base  # noqa: F401
 
 from .session import AsyncSessionLocal, engine, get_db  # noqa: F401
 
@@ -73,10 +73,9 @@ async def init_db(
             logger.info("Tabelas criadas com sucesso")
     except SQLAlchemyError as err:
         logger.error("Erro ao (re)criar tabelas: %s", err)
-        raise
+
     except Exception as exc:
         logger.exception("Falha inesperada na inicialização do DB: %s", exc)
-    raise
 
 
 def init_db_sync(drop: bool = False) -> None:
@@ -91,7 +90,6 @@ def init_db_sync(drop: bool = False) -> None:
         asyncio.run(init_db(drop=drop))
     except Exception:
         logger.critical("init_db_sync falhou")
-        raise
 
 
 def main() -> None:

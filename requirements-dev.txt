@@ -1,0 +1,29 @@
+# requirements-dev.txt — Desenvolvimento
+
+# —— Testes ——
+pytest
+pytest-cov
+httpx
+
+# —— Lint, Estilo e Formatação ——
+black
+flake8
+toml
+pylint
+pycodestyle
+pyflakes
+isort
+
+# —— Tipagem ——
+mypy==1.16.0
+mypy-extensions
+typing-extensions
+typing-inspection
+types-requests
+types-PyYAML
+types-python-dateutil
+
+# —— Auxiliares ——
+iniconfig
+pathspec
+pre-commit

@@ -1,5 +1,3 @@
-# app/schemas/user.py
-
 from datetime import datetime
 from enum import Enum
 from typing import Optional
@@ -18,7 +16,7 @@ class UserBase(BaseModel):
     email: Optional[EmailStr] = Field(None, description="E-mail do usuário")
     full_name: Optional[str] = Field(None, description="Nome completo do usuário")
     disabled: Optional[bool] = Field(False, description="Se o usuário está desativado")
-    role: RoleEnum = Field(  # Fixed closing parenthesis alignment
+    role: RoleEnum = Field(
         ...,
         description="Nível de acesso do usuário (admin, user, auditor)",
     )
@@ -35,12 +33,28 @@ class UserRead(UserBase):
     created_at: datetime = Field(..., description="Data de criação do usuário")
     last_login: Optional[datetime] = Field(None, description="Último acesso do usuário")
 
-    class Config:  # Fixed closing parenthesis alignment
+    class Config:
         orm_mode = True
 
 
-# Schema para uso interno (inclui senha criptografada)
 class UserInDB(UserRead):
+    """
+    Representação interna do usuário, com senha criptografada.
+    Nunca deve ser exposta por rotas públicas.
+    """
     hashed_password: str = Field(
         ..., description="Senha criptografada armazenada no banco"
     )
+
+
+class UserResponse(BaseModel):
+    id: int
+    username: str
+    email: EmailStr
+    full_name: Optional[str] = None
+    disabled: Optional[bool] = False
+    role: Optional[str] = None
+    created_at: Optional[datetime] = None
+
+    class Config:
+        orm_mode = True

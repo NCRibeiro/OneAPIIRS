@@ -12,9 +12,9 @@ from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
 
+from app.models.user import User  # ✅ Correto: importação da entidade User do modelo
 from app.db import get_db
-from app.models import User
-from core.settings import settings
+from core.settings import settings  # ✅ Garante acesso a JWT_ALGORITHM corretamente
 
 # Configuração do OAuth2
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/token")
@@ -22,11 +22,12 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl=f"{settings.API_PREFIX}/token")
 
 class TokenData(BaseModel):
     """Dados extraídos do token JWT."""
-
     sub: str | None = None
 
 
-def decode_token(token: str) -> Dict[str, Any]:
+def decode_token(
+    token: str,
+) -> Dict[str, Any]:
     """
     Decodifica um JWT e retorna o payload.
     Levanta HTTPException se o token for inválido ou expirado.
@@ -40,11 +41,14 @@ def decode_token(token: str) -> Dict[str, Any]:
         payload = jwt.decode(
             token,
             settings.SECRET_KEY,
-            algorithms=[settings.ALGORITHM],
+            algorithms=[settings.JWT_ALGORITHM],  # ✅ Corrigido para JWT_ALGORITHM
             options={"verify_aud": False},
         )
+        # Garante que é um dicionário:
+        if not isinstance(payload, dict):
+            raise credentials_exception
         return payload
-    except JWTError:
+    except Exception:  # Pega qualquer erro no decode
         raise credentials_exception
 
 

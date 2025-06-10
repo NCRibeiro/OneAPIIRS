@@ -1,91 +1,58 @@
-# app/routers/modern.py
-
-from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from fastapi import APIRouter, HTTPException, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import select
+from typing import List, Annotated, Generator
 
-from app.db.models import ModernRecord as ModernModel
-from app.db.models import Taxpayer as TaxpayerModel
-from app.schemas.modern import ModernCreate, ModernRead
-from core.settings import settings  # Ensure this import is present
-from dependencies import get_current_user, get_db
+from app.models.modern import ModernRecord
+from app.schemas.modern import ModernCreate, ModernEntry
+from app.db.session import get_db as get_async_db
 
-router = APIRouter(
-    prefix=f"{settings.api_prefix}/modern",
-    tags=["Modern Records"],
-    dependencies=[Depends(get_current_user)],
-)
+router = APIRouter(prefix="/modern", tags=["Modern"])
+
+NOT_FOUND_MSG = "Modern record not found"
 
 
-@router.post(
-    "/",  # Adjusted to be within the character limit
-    response_model=ModernRead,
-    status_code=status.HTTP_201_CREATED,
-)
-async def create_modern_record(
-    payload: ModernCreate, db: AsyncSession = Depends(get_db)
-):
-    # Verifica se o contribuinte existe
-    result = await db.execute(
-        select(TaxpayerModel).filter(TaxpayerModel.id == payload.taxpayer_id)
+@router.post("/", response_model=ModernEntry, status_code=status.HTTP_201_CREATED)
+async def create_modern_entry(
+    entry: ModernCreate,
+    db: Annotated[AsyncSession, Depends(get_async_db)]
+) -> ModernEntry:
+    db_entry = ModernRecord(
+        full_name=entry.name,  # Use name from ModernCreate for full_name
+        cpf=entry.cpf,
+        income=entry.income,
+        status="Pending",  # Default status for new modern records
     )
-    taxpayer = result.scalars().first()
-    if not taxpayer:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
-        )
-    new_record = ModernModel(**payload.dict())
-    db.add(new_record)
+    db.add(db_entry)
     await db.commit()
-    await db.refresh(new_record)
-    return new_record
+    await db.refresh(db_entry)
+    return ModernEntry.model_validate(db_entry)
 
 
-@router.get("/", response_model=list[ModernRead])
-async def list_modern_records(
-    skip: int = 0, limit: int = 10, db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(ModernModel).offset(skip).limit(limit))
-    return result.scalars().all()
+@router.get("/", response_model=List[ModernEntry])
+async def list_modern_entries(db: Annotated[AsyncSession, Depends(get_async_db)]) -> List[ModernEntry]:
+    result = await db.execute(select(ModernRecord))
+    return [
+        ModernEntry.model_validate(entry)
+        for entry in
+        result.scalars().all()
+    ]
 
 
-@router.get("/{record_id}", response_model=ModernRead)
-async def get_modern_record(record_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(ModernModel).filter(ModernModel.id == record_id))
-    record = result.scalars().first()
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Modern record not found"
-        )
-    return record
+@router.get("/{entry_id}", response_model=ModernEntry)
+async def get_modern_entry(entry_id: int, db: Annotated[AsyncSession, Depends(get_async_db)]) -> ModernEntry:
+    result = await db.execute(select(ModernRecord).filter(ModernRecord.id == entry_id))
+    entry = result.scalars().first()
+    if not entry:
+        raise HTTPException(status_code=404, detail=NOT_FOUND_MSG)
+    return ModernEntry.model_validate(entry)
 
 
-@router.put("/{record_id}", response_model=ModernRead)
-async def update_modern_record(
-    record_id: int, payload: ModernCreate, db: AsyncSession = Depends(get_db)
-):
-    result = await db.execute(select(ModernModel).filter(ModernModel.id == record_id))
-    record = result.scalars().first()
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Modern record not found"
-        )
-    for field, value in payload.dict().items():
-        setattr(record, field, value)
+@router.delete("/{entry_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_modern_entry(entry_id: int, db: Annotated[AsyncSession, Depends(get_async_db)]) -> None:
+    result = await db.execute(select(ModernRecord).filter(ModernRecord.id == entry_id))
+    entry = result.scalars().first()
+    if not entry:
+        raise HTTPException(status_code=404, detail=NOT_FOUND_MSG)
+    await db.delete(entry)
     await db.commit()
-    await db.refresh(record)
-    return record
-
-
-@router.delete("/{record_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_modern_record(record_id: int, db: AsyncSession = Depends(get_db)):
-    result = await db.execute(select(ModernModel).filter(ModernModel.id == record_id))
-    record = result.scalars().first()
-    if not record:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Modern record not found"
-        )
-    await db.delete(record)
-    await db.commit()
-    return {"detail": "Modern record deleted"}
-    return record

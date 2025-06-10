@@ -1,30 +1,41 @@
-# app/services/analytics_service.py
 """
 analytics_service.py – Lógica de agregação para o módulo Analytics.
 """
 
 from collections import defaultdict
 from datetime import datetime
+from typing import Annotated, DefaultDict
 
-# Schemas de resposta
-from app.schemas.analytics import (AnalyticsSummary, AuditError,
-                                   AuditErrorList, MonthlyBreakdown,
-                                   MonthlyRecord)
+from app.schemas.analytics import (
+    AnalyticsSummary,
+    AuditError,
+    AuditErrorList,
+    MonthlyBreakdown,
+    MonthlyRecord,
+)
 
-# Importação de bancos simulados em memória
-from .database import audit_log, legacy_db, modern_db, taxpayer_db
+# Bancos simulados em memória
+from app.services.database import (
+    audit_log,
+    legacy_db,
+    modern_db,
+    taxpayer_db,
+)
 
-# ────────────────────────────────────────────────────────────────
-# Funções de serviço
-# ────────────────────────────────────────────────────────────────
 
+def generate_summary() -> Annotated[AnalyticsSummary, ...]:
+    """
+    Calcula métricas globais do sistema:
+    - Total de contribuintes
+    - Registros legados e modernos
+    - Taxa de erro (%)
+    """
 
-def generate_summary() -> AnalyticsSummary:
-    """Calcula métricas gerais do sistema."""
     total_taxpayers = len(taxpayer_db)
     total_legacy = len(legacy_db)
     total_modern = len(modern_db)
     total_errors = len(audit_log)
+
     error_rate = (total_errors / total_legacy * 100) if total_legacy > 0 else 0.0
 
     return AnalyticsSummary(
@@ -35,26 +46,40 @@ def generate_summary() -> AnalyticsSummary:
     )
 
 
-def get_monthly_distribution() -> MonthlyBreakdown:
-    """Retorna distribuição de registros legados por mês."""
-    counts = defaultdict(int)
+def get_monthly_distribution() -> Annotated[MonthlyBreakdown, ...]:
+    """
+    Agrupa registros legados por mês (AAAA-MM).
+    Ignora registros com timestamp inválido ou ausente.
+    """
+
+    counts: DefaultDict[str, int] = defaultdict(int)
+
     for record in legacy_db:
-        # espera que cada registro tenha atributo 'timestamp'
         ts = getattr(record, "timestamp", None)
         if ts:
-            month = (
-                datetime.fromisoformat(ts).strftime("%Y-%m")
-                if isinstance(ts, str)
-                else ts.strftime("%Y-%m")
-            )
-            counts[month] += 1
+            try:
+                parsed = datetime.fromisoformat(ts) if isinstance(ts, str) else ts
+                month = parsed.strftime("%Y-%m")
+                counts[month] += 1
+            except Exception:
+                continue  # Ignora timestamps inválidos
 
-    # Constrói lista ordenada
-    monthly = [MonthlyRecord(month=m, count=c) for m, c in sorted(counts.items())]
+    monthly = [
+        MonthlyRecord(month=m, count=c)
+        for m, c in sorted(counts.items())
+    ]
+
     return MonthlyBreakdown(records_by_month=monthly)
 
 
-def list_audit_errors() -> AuditErrorList:
-    """Lista todos os erros de auditoria registrados."""
-    errors = [AuditError(taxpayer_id=e.taxpayer_id, issue=e.action) for e in audit_log]
+def list_audit_errors() -> Annotated[AuditErrorList, ...]:
+    """
+    Retorna todos os erros de auditoria registrados no sistema.
+    Cada erro contém o contribuinte e a descrição da ação.
+    """
+    errors = [
+        AuditError(taxpayer_id=e.taxpayer_id, issue=e.issue)
+        for e in audit_log
+    ]
+
     return AuditErrorList(errors=errors)

@@ -24,7 +24,7 @@ try:
 except _metadata.PackageNotFoundError:
     _default_version = "0.0.0"  # Default version if package not found
     __version__ = _default_version  # Reassignment is now allowed
-    pass  # Ensures the except block is not empty
+
 
 # ───────────── Ambiente ──────────────────────
 ENV: Final[str] = os.getenv("APP_ENV", "development").lower()
@@ -68,4 +68,3 @@ __email__ = "contato@nivea.dev"
 __github_username__ = "NCRibeiro"
 __status__ = "Development"
 __title__ = "OneAPIIRS — APE Project"
-__version__ = __version__  # Ensure __version__ is defined here

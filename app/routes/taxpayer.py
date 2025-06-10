@@ -1,96 +1,88 @@
-# app/routers/taxpayer.py
-
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.db.models import Taxpayer as TaxpayerModel
-from app.dependencies import get_current_user, get_db
+from app.models.taxpayer import Taxpayer
 from app.schemas.taxpayer import TaxpayerCreate, TaxpayerRead
+from core.settings import settings
+from dependencies import get_current_user
+from app.db.session import get_db
 
-router = APIRouter(prefix="/taxpayers", tags=["Taxpayers"])
-
-
-@router.post(
-    "/",
-    response_model=TaxpayerRead,
-    status_code=status.HTTP_201_CREATED,
+router = APIRouter(
+    prefix=f"{settings.API_PREFIX}/taxpayers",
+    tags=["Taxpayers"],
     dependencies=[Depends(get_current_user)],
 )
-def create_taxpayer(
+
+NOT_FOUND_MSG = "Taxpayer not found"
+
+
+@router.post("/", response_model=TaxpayerRead, status_code=status.HTTP_201_CREATED)
+async def create_taxpayer(
     taxpayer: TaxpayerCreate,
-    db: Session = Depends(get_db),
-):
-    new_tp = TaxpayerModel(**taxpayer.dict())
+    db: AsyncSession = Depends(get_db),
+) -> Taxpayer:
+    new_tp = Taxpayer(**taxpayer.model_dump())
     db.add(new_tp)
-    db.commit()
-    db.refresh(new_tp)
+    await db.commit()
+    await db.refresh(new_tp)
     return new_tp
 
 
-@router.get(
-    "/", response_model=list[TaxpayerRead], dependencies=[Depends(get_current_user)]
-)
-def list_taxpayers(
+@router.get("/", response_model=list[TaxpayerRead])
+async def list_taxpayers(
     skip: int = 0,
     limit: int = 10,
-    db: Session = Depends(get_db),
-):
-    return db.query(TaxpayerModel).offset(skip).limit(limit).all()
+    db: AsyncSession = Depends(get_db),
+) -> list[Taxpayer]:
+    result = await db.execute(
+        select(Taxpayer).offset(skip).limit(limit),
+    )
+    return list(
+        result.scalars().all()
+    )
 
 
-@router.get(
-    "/{taxpayer_id}",
-    response_model=TaxpayerRead,
-    dependencies=[Depends(get_current_user)],
-)
-def get_taxpayer(
+@router.get("/{taxpayer_id}", response_model=TaxpayerRead)
+async def get_taxpayer(
     taxpayer_id: int,
-    db: Session = Depends(get_db),
-):
-    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    db: AsyncSession = Depends(get_db),
+) -> Taxpayer:
+    result = await db.execute(select(Taxpayer).filter(Taxpayer.id == taxpayer_id))
+    tp = result.scalars().first()
     if not tp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND_MSG)
     return tp
 
 
-@router.put(
-    "/{taxpayer_id}",
-    response_model=TaxpayerRead,
-    dependencies=[Depends(get_current_user)],
-)
-def update_taxpayer(
+@router.put("/{taxpayer_id}", response_model=TaxpayerRead)
+async def update_taxpayer(
     taxpayer_id: int,
     payload: TaxpayerCreate,
-    db: Session = Depends(get_db),
-):
-    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    db: AsyncSession = Depends(get_db),
+) -> Taxpayer:
+    result = await db.execute(select(Taxpayer).filter(Taxpayer.id == taxpayer_id))
+    tp = result.scalars().first()
     if not tp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
-        )
-    for field, value in payload.dict().items():
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND_MSG)
+
+    for field, value in payload.model_dump().items():
         setattr(tp, field, value)
-    db.commit()
-    db.refresh(tp)
+    await db.commit()
+    await db.refresh(tp)
     return tp
 
 
-@router.delete(
-    "/{taxpayer_id}",
-    status_code=status.HTTP_204_NO_CONTENT,
-    dependencies=[Depends(get_current_user)],
-)
-def delete_taxpayer(
+@router.delete("/{taxpayer_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_taxpayer(
     taxpayer_id: int,
-    db: Session = Depends(get_db),
-):
-    tp = db.query(TaxpayerModel).filter(TaxpayerModel.id == taxpayer_id).first()
+    db: AsyncSession = Depends(get_db),
+) -> None:
+    result = await db.execute(select(Taxpayer).filter(Taxpayer.id == taxpayer_id))
+    tp = result.scalars().first()
     if not tp:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND, detail="Taxpayer not found"
-        )
-    db.delete(tp)
-    db.commit()
-    return {"detail": "Taxpayer deleted"}
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=NOT_FOUND_MSG)
+
+    await db.delete(tp)
+    await db.commit()
+    return None

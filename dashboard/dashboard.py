@@ -1,3 +1,5 @@
+import os
+from typing import Any, Sequence
 import dash
 import dash_bootstrap_components as dbc
 import numpy as np
@@ -6,12 +8,15 @@ import plotly.express as px
 from dash import dcc, html
 from dash.dependencies import Input, Output
 from fpdf import FPDF
+from pandas import DataFrame
+from dash.dcc import send_file
+from dash.dcc import send_data_frame
 
 # --- Inicialização ---
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])
 
 # --- Dados simulados ---
-np.random.seed(42)
+rng = np.random.default_rng(42)  # Generator moderno, evita warnings SonarQube
 n = 100
 tipos = ["ICMS", "IPI", "ISS"]
 status = [
@@ -24,14 +29,19 @@ status = [
 df = pd.DataFrame(
     {
         "ID": range(1, n + 1),
-        "Tipo": np.random.choice(tipos, n),
-        "Declarado": np.round(np.random.uniform(500, 10000, n), 2),
-        "Pago": np.round(np.random.uniform(500, 10000, n), 2),
-        "Status": np.random.choice(status, n),
+        "Tipo": rng.choice(tipos, n),
+        "Declarado": np.round(rng.uniform(500, 10000, n), 2),
+        "Pago": np.round(rng.uniform(500, 10000, n), 2),
+        "Status": rng.choice(status, n),
     }
 )
 df["Inconsistência"] = np.where(df["Declarado"] != df["Pago"], "Sim", "Não")
-df["Mês"] = np.random.choice(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"], n)
+df["Mês"] = rng.choice(["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"], n)
+
+
+# --- Funções auxiliares ---
+def get_dropdown_options(values: list[str]) -> Sequence[dict[str, Any]]:
+    return [{"label": v, "value": v} for v in values]
 
 
 # --- Layout ---
@@ -43,7 +53,7 @@ app.layout = html.Div(
                 dbc.Col(
                     dcc.Dropdown(
                         id="dropdown-imposto",
-                        options=[{"label": t, "value": t} for t in tipos],
+                        options=[{"label": t, "value": t} for t in tipos],  # type: ignore
                         value=tipos[0],
                         clearable=False,
                     ),
@@ -52,7 +62,7 @@ app.layout = html.Div(
                 dbc.Col(
                     dcc.Dropdown(
                         id="dropdown-mes",
-                        options=[{"label": m, "value": m} for m in df["Mês"].unique()],
+                        options=[{"label": str(m), "value": str(m)} for m in df["Mês"].unique()],  # type: ignore
                         value=df["Mês"].iloc[0],
                         clearable=False,
                     ),
@@ -77,13 +87,11 @@ app.layout = html.Div(
         dbc.Row(
             [
                 dbc.Col(
-                    dbc.Button("Baixar PDF", id="btn-pdf", color="primary", block=True),
+                    dbc.Button("Baixar PDF", id="btn-pdf", color="primary", className="d-grid"),
                     width=3,
                 ),
                 dbc.Col(
-                    dbc.Button(
-                        "Baixar Excel", id="btn-excel", color="secondary", block=True
-                    ),
+                    dbc.Button("Baixar Excel", id="btn-excel", color="secondary", className="d-grid"),
                     width=3,
                 ),
             ],
@@ -105,20 +113,19 @@ app.layout = html.Div(
     Input("dropdown-imposto", "value"),
     Input("dropdown-mes", "value"),
 )
-def atualizar(imposto, mes):
+def atualizar(imposto: str, mes: str) -> tuple[Any, Any, Any, Any]:
     dff = df[(df["Tipo"] == imposto) & (df["Mês"] == mes)]
     f1 = px.bar(dff, x="Tipo", color="Inconsistência", title="Inconsistências")
     f2 = px.histogram(dff, x="Pago", title="Distribuição de Valores Pagos")
     sum_mes = dff.groupby("Mês")["Pago"].sum().reset_index()
     f3 = px.line(sum_mes, x="Mês", y="Pago", title="Evolução de Pagamentos")
     f4 = px.pie(dff, names="Status", title="Status Auditoria")
-
     return f1, f2, f3, f4
 
 
 # --- Geração de PDF em disco (cleanup após envio) ---
-def criar_pdf(dataframe) -> str:
-    path = "/tmp/relatorio.pdf"
+def criar_pdf(dataframe: DataFrame) -> str:
+    path = os.path.join(os.path.abspath(os.path.dirname(__file__)), "relatorio.pdf")
     pdf = FPDF()
     pdf.add_page()
     pdf.set_font("Arial", "B", 16)
@@ -130,30 +137,24 @@ def criar_pdf(dataframe) -> str:
     return path
 
 
-# --- Callbacks de download ---
 @app.callback(
     Output("download-pdf", "data"),
     Input("btn-pdf", "n_clicks"),
     prevent_initial_call=True,
 )
-def baixar_pdf(n):
-    arquivo = criar_pdf(df)
-    return dcc.send_file(arquivo)
+def baixar_pdf(n: int) -> Any:
+    return send_file(criar_pdf(df))  # type: ignore
 
 
-# --- Callbacks de download ---
 @app.callback(
     Output("download-excel", "data"),
     Input("btn-excel", "n_clicks"),
     prevent_initial_call=True,
 )
-def baixar_excel(n):
-    # O Dash permite usar send_data_frame diretamente:
-    return dcc.send_data_frame(df.to_excel, "relatorio.xlsx", index=False)
+def baixar_excel(n: int) -> Any:
+    return send_data_frame(df.to_excel, "relatorio.xlsx", sheet_name="Dados", index=False)  # type: ignore
 
 
 # --- Run ---
-
-
 if __name__ == "__main__":
     app.run_server(debug=True)

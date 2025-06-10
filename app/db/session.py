@@ -8,11 +8,11 @@ Gerencia a conexão assíncrona com o banco de dados PostgreSQL via SQLAlchemy.
 
 from typing import AsyncGenerator
 
-from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine
+from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import sessionmaker
 
 # Corrigido para o import absoluto (roda dentro de /app)
-from app.core.settings import settings
+from core.settings import settings
 
 # 1) Cria o engine assíncrono (usa asyncpg por baixo)
 engine = create_async_engine(
@@ -28,6 +28,11 @@ engine = create_async_engine(
 # 2) Cria a fábrica de sessões
 AsyncSessionLocal = sessionmaker(
     bind=engine, class_=AsyncSession, expire_on_commit=False  # type: ignore
+)
+
+async_session = async_sessionmaker(
+    bind=engine,
+    expire_on_commit=False,
 )
 
 

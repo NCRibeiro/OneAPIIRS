@@ -1,5 +1,3 @@
-# app/routers/transform.py
-
 import re
 from datetime import datetime
 from typing import Optional
@@ -8,12 +6,12 @@ from uuid import uuid4
 from fastapi import APIRouter, Body, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 
-from app.dependencies import get_current_user
 from app.services.transformer import cobol_to_json
 from core.settings import settings
+from dependencies import get_current_user
 
 router = APIRouter(
-    prefix=f"{settings.api_prefix}/transform",
+    prefix=f"{settings.API_PREFIX}/transform",
     tags=["Transformador"],
     dependencies=[Depends(get_current_user)],
 )

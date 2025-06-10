@@ -1,61 +1,82 @@
-# requirements.txt
+# requirements.txt — Produção
 
-# ===============================
-# CORE • Framework e ASGI
-# ===============================
-fastapi>=0.95.1
-uvicorn[standard]>=0.29.0        # inclui uvloop, httptools e gunicorn hooks
+# —— Core Frameworks ——
+fastapi
+starlette
+uvicorn
 
-# ===============================
-# BANCO DE DADOS • ORM e DRIVERS
-# ===============================
-sqlalchemy>=2.0.0
-asyncpg>=0.27.0                   # driver async para PostgreSQL
-psycopg2-binary>=2.9.0            # driver síncrono para PostgreSQL
+# —— Autenticação e Criptografia ——
+passlib[bcrypt]
+cryptography
+python-jose       
+PYJWT
 
-# ===============================
-# AUTENTICAÇÃO & SEGURANÇA
-# ===============================
-python-jose[cryptography]>=3.4.0   # JWT
-passlib[bcrypt]>=1.7.4             # hashing de senhas
-python-multipart>=0.0.9            # suporte a form-data (upload de arquivos)
+# —— Validação ——
+pydantic==2.11.3
+pydantic-settings
+email_validator
+python-multipart
 
-# ===============================
-# VALIDAÇÃO & CONFIGURAÇÃO
-# ===============================
-pydantic                           # validação de modelos
-pydantic-settings>=2.0.0
-python-dotenv>=1.0.0               # carregamento de .env
-email-validator>=1.2.0             # validação de e-mails (pydantic extras)
+# —— Banco de Dados ——
+sqlalchemy-utils
+sqlalchemy
+asyncpg
+greenlet
 
-# ===============================
-# UTILITÁRIOS & DESENVOLVIMENTO
-# ===============================
-httpx>=0.28.1                      # testes HTTP
-pytest>=8.3.5                      # testes automatizados
-black>=24.3.0                      # formatação de código
-isort>=5.13.2                      # ordenação de imports
-flake8>=7.0.0                      # linting
-mypy>=1.0.0                        # type-checking
-pylint
+# —— Ferramentas Web ——
+requests
+websockets
+python-dotenv
 
-# ===============================
-# DEPENDÊNCIAS COMPLEMENTARES
-# ===============================
-python-jose>=3.4.0
-passlib>=1.7.4
-typing-extensions>=4.13.2
-anyio>=4.9.0
-dnspython>=2.7.0
-bcrypt>=4.3.0
+# —— Async e Background ——
+anyio
+h11
+nest-asyncio
+sniffio
+watchfiles
 
-# ===============================
-# OPICIONAL • DATA & RELATÓRIOS
-# ===============================
-pandas>=1.5.3
-numpy>=1.24.2
-plotly>=5.9.0
-xlsxwriter>=3.2.0
-fpdf2>=2.7.8
-dash>=2.7.1
-dash-bootstrap-components>=1.5.3
+# —— Visualização e Dashboards ——
+dash
+dash-bootstrap-components
+plotly
+fpdf2
+XlsxWriter
+
+# —— Dados e DataFrames ——
+pandas
+numpy
+pytz
+tzdata
+python-dateutil
+
+# —— Utilitários ——
+defusedxml
+dnspython
+pyasn1
+rsa
+six
+retrying
+idna
+urllib3
+charset-normalizer
+certifi
+colorama
+platformdirs
+zipp
+importlib_metadata
+MarkupSafe
+Jinja2
+itsdangerous
+click
+
+# —— Outros ——
+fonttools
+pillow
+narwhals
+ecdsa
+cffi
+pycparser
+typer
+rich
+
+

@@ -1,38 +1,45 @@
-# app/schemas/external.py
-
-from typing import List
-
+from datetime import datetime
+from typing import List, Annotated
 from pydantic import BaseModel, Field
 
 
 class ExternalCheckResult(BaseModel):
-    cpf: str = Field(..., description="CPF consultado, no formato XXX.XXX.XXX-XX")
-    is_valid: bool = Field(
-        ..., description="Indica se o CPF é válido no sistema federal"
-    )
-    income_score: int = Field(..., description="Score financeiro retornado, de 0 a 100")
-    has_debts: bool = Field(
-        ..., description="True se há pendências financeiras registradas"
-    )
-    checked_at: str = Field(..., description="Timestamp UTC da consulta")
+    """Resposta da verificação externa de CPF e situação financeira."""
+
+    cpf: Annotated[str, Field(example="123.456.789-00", description="CPF consultado")]
+    is_valid: Annotated[bool, Field(description="True se o CPF é válido")]
+    income_score: Annotated[int, Field(ge=0, le=100, description="Score financeiro (0–100)")]
+    has_debts: Annotated[bool, Field(description="Indica se há dívidas registradas")]
+    checked_at: Annotated[datetime, Field(example="2025-05-13T16:40:00Z", description="Data/hora da consulta")]
 
 
 class SupportedBank(BaseModel):
-    name: str = Field(..., description="Nome do banco")
-    code: str = Field(..., description="Código identificador do banco")
+    """Banco compatível com integração externa."""
+
+    name: Annotated[str, Field(example="Bank of Mars", description="Nome do banco")]
+    code: Annotated[str, Field(example="001", description="Código identificador")]
 
 
 class BanksResponse(BaseModel):
-    banks: List[SupportedBank] = Field(..., description="Lista de bancos suportados")
+    """Resposta contendo lista de bancos suportados."""
 
+    banks: Annotated[List[SupportedBank], Field(description="Lista de bancos suportados")]
 
-class Config:
-    schema_extra = {
-        "example": {
-            "banks": [
-                {"name": "Bank of Mars", "code": "001"},
-                {"name": "Lunar Savings", "code": "002"},
-                {"name": "Intergalactic Credit Union", "code": "003"},
-            ]
+    model_config = {
+        "json_schema_extra": {
+            "example": {
+                "banks": [
+                    {"name": "Bank of Mars", "code": "001"},
+                    {"name": "Lunar Savings", "code": "002"},
+                    {"name": "Intergalactic Credit Union", "code": "003"},
+                ]
+            }
         }
     }
+
+
+__all__ = [
+    "ExternalCheckResult",
+    "SupportedBank",
+    "BanksResponse",
+]

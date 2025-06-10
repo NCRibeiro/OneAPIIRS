@@ -12,13 +12,17 @@ if not exist ".venv" (
 REM 2) Ativa o venv
 call .venv\Scripts\activate.bat
 
-REM 3) Instala/upgrades das dependências
+REM 3) Instala/atualiza dependências
 echo Instalando dependências...
 pip install --upgrade pip
-pip install -r requirements.txt
+pip install -r requirements.txt -r requirements-dev.txt
 
-REM 4) Inicia o servidor Uvicorn
+REM 4) Valida estrutura (opcional)
+if exist scripts\check_estrutura.sh (
+    echo Verificando estrutura do projeto...
+    bash scripts/check_estrutura.sh
+)
+
+REM 5) Inicia o servidor Uvicorn
 echo Iniciando servidor FastAPI...
-uvicorn main:app --host 0.0.0.0 --port 8000 --reload
-
-
+uvicorn app.main:app --host 127.0.0.1 --port 8000 --reload

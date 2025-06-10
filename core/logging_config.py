@@ -11,7 +11,9 @@ LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
 
 # Handler para arquivo rotativo
 file_handler = RotatingFileHandler(
-    filename="security_audit.log", maxBytes=10 * 1024 * 1024, backupCount=5  # 10 MB
+    filename="security_audit.log",
+    maxBytes=10 * 1024 * 1024,
+    backupCount=5,  # 10 MB
 )
 file_handler.setFormatter(logging.Formatter(LOG_FORMAT))
 

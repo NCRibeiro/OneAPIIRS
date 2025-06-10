@@ -1,13 +1,16 @@
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 
-from app.dependencies import get_current_user
+from dependencies import get_current_user
 from app.schemas.external import ExternalCheckResult
-from app.services.external import (check_debts, fetch_income_score,
-                                   validate_cpf_externally)
+from app.services.external import (
+    check_debts,
+    fetch_income_score,
+    validate_cpf_externally,
+)
 from core.settings import settings
 
 router = APIRouter(
-    prefix=f"{settings.api_prefix}/external",
+    prefix=f"{settings.API_PREFIX}/external",
     tags=["External Integrations"],
     dependencies=[Depends(get_current_user)],
 )
@@ -22,7 +25,7 @@ router = APIRouter(
 async def external_check(
     cpf: str = Query(
         ..., min_length=14, max_length=14, description="CPF no formato XXX.XXX.XXX-XX"
-    )
+    ),
 ) -> ExternalCheckResult:
     try:
         valid = await validate_cpf_externally(cpf)
@@ -41,7 +44,7 @@ async def external_check(
 @router.get(
     "/banks",
     status_code=status.HTTP_200_OK,
-    summary="Lista bancos suportados",
+    summary="Lista bancos suportados (mock)",
 )
 async def get_supported_banks():
     return {

@@ -1,0 +1,50 @@
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \..*|              # ocultos: .venv, .git, etc
+    __pycache__|
+    build|
+    dist|
+    migrations|
+    alembic|
+    node_modules|
+    .*\.egg-info
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+multi_line_output = 3
+include_trailing_comma = true
+known_first_party = ["app"]
+known_third_party = ["fastapi", "sqlalchemy", "pydantic", "plotly"]
+
+[tool.mypy]
+python_version = 3.11
+plugins = ["pydantic.mypy"]
+strict = true
+follow_imports = "normal"
+ignore_missing_imports = true
+disable_error_code = ["call-arg"]
+check_untyped_defs = false
+warn_unused_ignores = true
+warn_redundant_casts = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = "-ra -q --tb=short"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+log_cli = true
+log_cli_level = "INFO"
+log_cli_format = "%(asctime)s [%(levelname)s] %(message)s"
+log_cli_date_format = "%Y-%m-%d %H:%M:%S"
+
+[tool.coverage.run]
+branch = true
+source = ["app"]

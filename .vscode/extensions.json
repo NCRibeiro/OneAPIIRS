@@ -1,0 +1,29 @@
+{
+  "recommendations": [
+    // Python e ambiente
+    "ms-python.python",
+    "ms-python.vscode-pylance",
+    "ms-python.isort",
+    "batisteo.vscode-django", // Útil também para FastAPI por suporte a templates
+    // Docker e containers
+    "ms-azuretools.vscode-docker",
+    // Banco de dados e SQL
+    "mtxr.sqltools",
+    "mtxr.sqltools-driver-pg", // PostgreSQL
+    "mtxr.sqltools-driver-mysql", // MySQL (se usar)
+    // Segurança e segurança de código
+    "github.vscode-github-actions",
+    "sonarsource.sonarlint-vscode",
+    // Lint, formatação e qualidade
+    "ms-python.black-formatter", // Formatação Black
+    "charliermarsh.ruff", // Linter ultra-rápido para Python
+    "ms-vscode.cpptools", // Dependência cruzada (às vezes usada para bindings nativos)
+    // Testes
+    "kavod-io.vscode-jest-test-adapter", // Se tiver JS/TS no frontend
+    // API Client direto no VS Code
+    "humao.rest-client", // Permite testar endpoints REST direto no editor
+    // Markdown e documentação
+    "yzhang.markdown-all-in-one",
+    "bierner.markdown-mermaid"
+  ]
+}

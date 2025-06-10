@@ -1,72 +1,93 @@
-# app/services/auditor.py
 """
-services/auditor.py – Regras de auditoria para dados legados.
+app/services/auditor.py
+
+Serviço de auditoria para detectar inconsistências e possíveis fraudes em dados legados.
 """
+
 from collections import Counter
-from datetime import datetime
-from typing import List
+from datetime import datetime, date
+from typing import Annotated, List
 
-from app.schemas.audit import AuditReport, AuditSummary, SuspiciousRecord
 from app.schemas.legacy import LegacyEntry
+from app.schemas.audit import AuditReport, SuspiciousRecord, AuditSummary
 
 
-def run_audit(data: List[LegacyEntry]) -> AuditReport:
+def run_audit(data: Annotated[List[LegacyEntry], ...]) -> Annotated[AuditReport, ...]:
     """
-    Executa regras de auditoria em uma lista de registros legados.
-
-    Regras:
-    1) CPF duplicado
-    2) Renda acima de 1.000.000
-    3) Menor de 18 anos com renda
+    Executa auditoria fiscal com base em múltiplas regras:
+    - CPF duplicado
+    - Pessoa menor de idade com renda
+    - Renda acima de R$ 1.000.000
+    - Campos obrigatórios ausentes
     """
-    suspicious: List[SuspiciousRecord] = []
 
-    # Contagem de ocorrências de CPF para detectar duplicados
-    cpf_counts = Counter(entry.cpf for entry in data)
+    suspicious: List[Annotated[SuspiciousRecord, ...]] = []
+
+    # Conta CPFs duplicados
+    cpf_counts: Counter[str] = Counter(entry.cpf for entry in data)
 
     for entry in data:
-        # Regra 1: CPF duplicado
-        if cpf_counts[entry.cpf] > 1:
-            suspicious.append(
-                SuspiciousRecord(
-                    id=str(entry.id),
-                    name=entry.name,
-                    cpf=entry.cpf,
-                    reason="CPF duplicado",
-                )
-            )
-            continue
+        if _is_cpf_duplicado(entry, cpf_counts):
+            suspicious.append(_suspicious(entry, "CPF duplicado"))
 
-        # Regra 2: Renda acima de 1 milhão
-        if entry.income > 1_000_000:
-            suspicious.append(
-                SuspiciousRecord(
-                    id=str(entry.id),
-                    name=entry.name,
-                    cpf=entry.cpf,
-                    reason="Renda acima do esperado",
-                )
-            )
-            continue
+        if _is_menor_de_idade_com_renda(entry):
+            suspicious.append(_suspicious(entry, "Menor de idade com renda"))
 
-        # Regra 3: Menor de idade com renda
-        birth = entry.birth_date
-        age_years = (datetime.utcnow().date() - birth.date()).days // 365
-        if age_years < 18 and entry.income > 0:
-            suspicious.append(
-                SuspiciousRecord(
-                    id=str(entry.id),
-                    name=entry.name,
-                    cpf=entry.cpf,
-                    reason="Menor de idade com renda",
-                )
-            )
+        if _is_renda_acima_do_limite(entry):
+            suspicious.append(_suspicious(entry, "Renda acima de R$ 1.000.000"))
 
-    # Construção do resumo da auditoria
+        if _tem_campos_vazios(entry):
+            suspicious.append(_suspicious(entry, "Campos obrigatórios ausentes"))
+
     summary = AuditSummary(
-        total_records=len(data),
+        total_checked=len(data),
         suspicious_count=len(suspicious),
-        timestamp=datetime.utcnow().isoformat() + "Z",
+        audit_date=datetime.today().date()
     )
 
-    return AuditReport(summary=summary, suspicious=suspicious)
+    return AuditReport(
+        id="audit-001",
+        total_records=len(data),
+        total_suspect=len(suspicious),
+        suspicious=suspicious,
+        summary=summary
+    )
+
+
+# ───── Funções auxiliares ─────
+
+def _suspicious(entry: LegacyEntry, reason: str) -> SuspiciousRecord:
+    return SuspiciousRecord(
+        id=str(entry.id),
+        name=entry.name or "Desconhecido",
+        cpf=entry.cpf or "Desconhecido",
+        taxpayer_id=entry.taxpayer_id,
+        reason=reason,
+    )
+
+
+def _is_cpf_duplicado(entry: LegacyEntry, cpf_counts: Counter[str]) -> bool:
+    return cpf_counts.get(entry.cpf, 0) > 1
+
+
+def _is_menor_de_idade_com_renda(entry: LegacyEntry) -> bool:
+    try:
+        birth = (
+            entry.birth_date if isinstance(entry.birth_date, date)
+            else datetime.strptime(entry.birth_date, "%Y-%m-%d").date()
+        )
+        idade = (datetime.today().date() - birth).days // 365
+        return idade < 18 and float(entry.gross_income) > 0
+    except Exception:
+        return True  # Data malformada é considerada suspeita
+
+
+def _is_renda_acima_do_limite(entry: LegacyEntry) -> bool:
+    try:
+        return float(entry.gross_income) > 1_000_000
+    except ValueError:
+        return True
+
+
+def _tem_campos_vazios(entry: LegacyEntry) -> bool:
+    return not all([entry.name, entry.cpf, entry.birth_date, entry.gross_income])

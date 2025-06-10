@@ -1,75 +1,63 @@
-# app/main.py
-"""
-OneAPIIRS — Módulo Principal do Projeto APE
-"""
-
+from datetime import datetime, timezone
 import time
-from datetime import datetime
+from typing import Any, Callable, Awaitable
 
-# 1) Injeta variáveis de ambiente (config_env.py deve popular os.environ)
-import config_env  # noqa: F401
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
+from fastapi.staticfiles import StaticFiles
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
-from app.routes import api_router
+from app.db import init_db
+from app.routes.api_router import api_router
 from core.logging_config import get_logger
-# 2) Importa e instancia configurações (settings.py)
 from core.settings import settings
 from dependencies import get_current_user
 
-# 3) Importa e instancia o app FastAPI
-
-
-
-# configura logger
+# ─── Logger ─────────────────────────────────────
 logger = get_logger("ape-api")
 logger.setLevel(settings.LOG_LEVEL.upper())
-logger.info("Config carregada: %s", settings.dict())
+logger.info("Configuração carregada com sucesso.")  # ok
 
-# instancia FastAPI
+
+# ─── Instância da Aplicação ─────────────────────
 app = FastAPI(
     title=settings.API_TITLE,
     version=settings.API_VERSION,
     description=settings.API_DESCRIPTION,
     openapi_url=f"{settings.API_PREFIX}{settings.API_OPENAPI_URL}",
-    docs_url=(
-        f"{settings.API_PREFIX}{settings.API_DOCS_URL}"
-        if settings.ENABLE_DOCS
-        else None
-    ),
-    redoc_url=(
-        f"{settings.API_PREFIX}{settings.API_REDOC_URL}"
-        if settings.ENABLE_DOCS
-        else None
-    ),
+    docs_url=f"{settings.API_PREFIX}{settings.API_DOCS_URL}" if settings.ENABLE_DOCS else None,
+    redoc_url=f"{settings.API_PREFIX}{settings.API_REDOC_URL}" if settings.ENABLE_DOCS else None,
     debug=settings.DEBUG,
 )
 
-# CORS
+app.mount("/", StaticFiles(directory="static", html=True), name="static")
+app.include_router(api_router, prefix=settings.API_PREFIX)
+
+
+# ─── Middleware CORS ────────────────────────────
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# middlewares de headers
 
-
+# ─── Middleware: Tempo de Processamento ─────────
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next):
+async def add_process_time_header(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     start = time.time()
     response = await call_next(request)
-    response.headers["X-Process-Time"] = str(time.time() - start)
+    response.headers["X-Process-Time"] = str(round(time.time() - start, 4))
     return response
 
 
+# ─── Middleware: Headers de Segurança ───────────
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next):
+async def add_security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     response = await call_next(request)
     response.headers.update(
         {
@@ -81,10 +69,11 @@ async def add_security_headers(request: Request, call_next):
     return response
 
 
+# ─── Middleware: CSRF ───────────────────────────
 @app.middleware("http")
-async def csrf_token_validation(request: Request, call_next):
+async def csrf_token_validation(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
     if request.method in ["POST", "PUT", "DELETE"]:
-        token = request.headers.get("X-CSRF-Token")
+        token: str | None = request.headers.get("X-CSRF-Token")
         if not token or token != request.cookies.get("csrf_token"):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -93,20 +82,21 @@ async def csrf_token_validation(request: Request, call_next):
     return await call_next(request)
 
 
-# inclui todas as rotas com prefixo /api/v1
-app.include_router(api_router, prefix=settings.API_PREFIX)
+# ─── Healthcheck ────────────────────────────────
+@app.get("/health")
+def health_check() -> dict[str, str]:
+    return {"status": "online"}
 
-# rota raiz (health / info)
 
-
+# ─── Root Protegido ─────────────────────────────
 @app.get(f"{settings.API_PREFIX}/", tags=["Root"])
-async def get_root(current_user=Depends(get_current_user)):
+async def get_root(current_user: Any = Depends(get_current_user)) -> dict[str, Any]:
     return {
         "status": "online",
         "project": "OneAPIIRS - APE",
         "version": app.version,
         "message": "APE está vivo. A integração do legado começou.",
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(timezone.utc).isoformat(),
         "user": getattr(current_user, "username", None),
         "docs": {
             "swagger": f"{settings.API_PREFIX}{settings.API_DOCS_URL}",
@@ -115,10 +105,9 @@ async def get_root(current_user=Depends(get_current_user)):
     }
 
 
-# tratadores de erro
+# ─── Handler: Erros de Validação ────────────────
 @app.exception_handler(RequestValidationError)
-async def validation_exception_handler(request: Request, exc: RequestValidationError):
-
+async def validation_exception_handler(request: Request, exc: RequestValidationError) -> JSONResponse:
     logger.error(f"[VALIDATION ERROR] {request.url.path} → {exc}")
     return JSONResponse(
         status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
@@ -126,39 +115,41 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     )
 
 
+# ─── Handler: Erros Globais ─────────────────────
 @app.exception_handler(Exception)
-async def global_exception_handler(request: Request, exc: Exception):
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
     logger.error(f"[ERRO] {request.url.path} → {exc}")
     return JSONResponse(
         status_code=HTTP_500_INTERNAL_SERVER_ERROR,
-        content={"detail": "Erro interno no servidor", "error": str(exc)},
+        content={"detail": "Internal server error", "error": str(exc)},
     )
 
 
-# eventos de startup/shutdown
+# ─── Evento: Startup ────────────────────────────
 @app.on_event("startup")
-async def on_startup():
+async def on_startup() -> None:
     logger.info("APE iniciando...")
-    try:
-        from app.db.init_db import init_db
-
-        # init_db é síncrono; chama diretamente
-        init_db(drop=False)
-        logger.info("DB ready.")
-    except Exception as e:
-        logger.error(f"Erro ao inicializar DB: {e}")
-        raise
+    if settings.APP_ENV == "development":
+        try:
+            await init_db(drop=False)
+            logger.info("🗄️ Banco de dados pronto.")
+        except Exception as e:
+            logger.error(f"Erro ao inicializar DB: {e}")
+            raise
 
 
+# ─── Evento: Shutdown ───────────────────────────
 @app.on_event("shutdown")
-async def on_shutdown():
-    logger.info("APE encerrando — Até a próxima!")
+async def on_shutdown() -> None:
+    logger.info("APE encerrando — Até breve!")
 
 
-# execução direta
+# ─── Execução Local ─────────────────────────────
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run(
-        "app.main:app", host=settings.HOST, port=settings.PORT, reload=settings.RELOAD
+        "app.main:app",
+        host=settings.HOST,
+        port=settings.PORT,
+        reload=settings.RELOAD,
     )

@@ -5,14 +5,11 @@ Agrega todas as rotas da aplicação com possibilidade de controle de versões.
 """
 
 from fastapi import APIRouter
-
-from app.routes import (audit, auth, external, legacy, modern_routes, taxpayer,
-                        transform, user)
 from core.settings import settings
 
+# Importação dos routers de cada módulo
 from .analytics import router as analytics_router
 from .audit import router as audit_router
-# Importação dos routers de cada módulo
 from .auth import router as auth_router
 from .external import router as external_router
 from .legacy import router as legacy_router
@@ -22,7 +19,8 @@ from .transform import router as transform_router
 from .user import router as user_router
 
 # Roteador principal da API com prefixo versionado
-api_router = APIRouter(prefix=settings.api_prefix)
+api_router = APIRouter(
+    prefix=settings.API_PREFIX)
 
 # Registro dos routers
 api_router.include_router(auth_router)
@@ -37,6 +35,7 @@ api_router.include_router(user_router)
 
 __all__ = ["api_router"]
 
+# Metadados do módulo (úteis para documentação e distribuição futura)
 __title__ = "OneAPIIRS — APE Project"
 __author__ = "Nívea C. Ribeiro"
 __license__ = "MIT"

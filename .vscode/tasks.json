@@ -1,0 +1,26 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Run Tests",
+      "type": "shell",
+      "command": "pytest",
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Mypy",
+      "type": "shell",
+      "command": "mypy app/",
+      "group": "build",
+      "problemMatcher": []
+    },
+    {
+      "label": "Run Docker Compose",
+      "type": "shell",
+      "command": "docker-compose up --build",
+      "group": "build",
+      "problemMatcher": []
+    }
+  ]
+}

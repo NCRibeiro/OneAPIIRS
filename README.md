@@ -1,53 +1,82 @@
-# **OneAPIIRS - O Futuro da Transformação Fiscal Digital**
+# OneAPIIRS - O Futuro da Transformação Fiscal Digital
 
-**OneAPIIRS** não é apenas uma API — é a **revolução digital** na transformação de dados fiscais. Imagine um sistema inteligente que pode integrar dados fiscais de sistemas legados complexos e transformá-los em informações modernas e acessíveis, tudo em tempo real. Nossa solução é projetada para empresas, governos e instituições fiscais que estão prontos para abraçar o futuro da tributação, sem perder a precisão e a segurança. Este é um projeto inovador com o poder de redefinir a forma como o mundo lida com a administração fiscal.
+![Build Status](https://github.com/seu-usuario/OneAPIIRS/actions/workflows/ci-tests.yml/badge.svg)
+![Cobertura de Testes](https://img.shields.io/badge/Cobertura-90%25-brightgreen)
 
-## **A Missão**
+**OneAPIIRS** não é apenas uma API — é a revolução digital na transformação de dados fiscais. Imagine um sistema inteligente que integra dados fiscais de sistemas legados complexos e os transforma em informações modernas e acessíveis, tudo em tempo real. Projetada para empresas, governos e instituições fiscais que estão prontas para abraçar o futuro da tributação com precisão e segurança.
 
-Em um mundo em que a inovação é a chave para a eficiência, o **OneAPIIRS** está na vanguarda da modernização dos sistemas fiscais. A ideia central é simples, mas poderosa: **transformar dados fiscais legados e difíceis de manipular em informações acessíveis, compreensíveis e seguras**, prontas para a análise moderna e tomada de decisões.
+## A Missão
 
-Essa API vai além de simples transformações — ela integra **inteligência fiscal** para detectar inconsistências, fraudes e otimizar a maneira como os dados são tratados, proporcionando **análises preditivas** e **relatórios dinâmicos** para garantir que cada transação fiscal seja precisa, transparente e alinhada às regulamentações.
+Modernizar sistemas fiscais através da transformação de dados legados em informações seguras, acessíveis e auditáveis. O OneAPIIRS integra inteligência fiscal para detectar inconsistências, prevenir fraudes e permitir análises modernas e relatórios dinâmicos.
 
-## **Características Impressionantes**
+## Características Principais
 
-### 1. **Transformação de Dados Legados**
-Utilizando o poder do **FastAPI**, nossa solução permite que dados fiscais legados — que antes eram quase impossíveis de acessar ou usar — sejam convertidos de forma eficiente para um formato moderno, facilmente integrado a novos sistemas. Com suporte para COBOL e outras linguagens antigas, o OneAPIIRS é compatível com sistemas legados e proporciona uma transição suave para o futuro.
+- ✨ **Transformação de Dados Legados** com suporte a formatos COBOL e outros.
+- 🤖 **Auditoria Fiscal Inteligente** com detecção automática de fraudes e inconsistências.
+- 🔬 **Relatórios Preditivos** com dashboards interativos usando Plotly Dash.
+- 🔐 **Segurança Avançada** com JWT, CSRF, e testes automatizados.
+- ⚖️ **Arquitetura Containerizada** com Docker, PostgreSQL e FastAPI.
 
-### 2. **Auditoria Fiscal Inteligente**
-A inteligência incorporada na API vai além da simples verificação de conformidade. **Fraudes e inconsistências** são detectadas automaticamente através de algoritmos avançados, garantindo que os dados fiscais estejam sempre em conformidade. Qualquer discrepância é rapidamente sinalizada, minimizando riscos e maximizando a transparência.
+## Tecnologias Utilizadas
 
-### 3. **Relatórios e Insights Preditivos**
-Com **Dashboards interativos** criados usando **Plotly Dash**, você poderá visualizar, interpretar e agir com base nos dados fiscais de maneira intuitiva. Relatórios dinâmicos, insights e gráficos fornecem a você uma visão clara e acionável da situação fiscal em tempo real.
+- FastAPI
+- PostgreSQL
+- Docker / Docker Compose
+- JWT Authentication
+- Plotly Dash
+- Python 3.10+
+- Black, Flake8, Isort, Mypy, Pytest
 
-### 4. **Segurança de Nível Máximo**
-Com a utilização de **JWT (JSON Web Tokens)** para autenticação e autorização, seus dados estão sempre seguros. Além disso, a API é protegida contra **ataques de injeção** e vulnerabilidades, com **auditoria constante** de segurança e testes automatizados.
+## Como Rodar Localmente
 
-### 5. **Arquitetura Escalável e Containerizada**
-A arquitetura do OneAPIIRS foi projetada para ser escalável e de fácil manutenção, utilizando **Docker** para facilitar o deployment em qualquer infraestrutura, seja em ambientes de desenvolvimento, teste ou produção. O banco de dados é robusto e protegido, utilizando o **PostgreSQL**.
+### Requisitos
+- Python 3.10+
+- Docker e Docker Compose
+- Git
 
-## **Tecnologias Utilizadas**
+### Execução com Makefile
 
-- **FastAPI** – Framework de alto desempenho para APIs.
-- **PostgreSQL** – Banco de dados relacional moderno e escalável.
-- **Docker** – Para uma fácil implementação e escalabilidade.
-- **JWT** – Autenticação e segurança de dados.
-- **Plotly Dash** – Para visualização interativa e relatórios dinâmicos.
-- **Swagger** – Para uma documentação da API interativa e fácil de usar.
-- **Python** – A linguagem de escolha para desenvolvimento ágil e robusto.
+```bash
+make up          # Sobe o sistema com validação de estrutura
+make test        # Executa testes automatizados
+make check-quality  # Verifica formatação, tipo, lint e testes
+make sh          # Entra no container da API
+```
 
-## **Como Rodar Localmente**
+## Scripts Disponíveis
 
-### Pré-requisitos
+- `scripts/check_estrutura.sh` — Valida se a estrutura do projeto está correta.
+- `scripts/check_quality.sh` — Executa: black, isort, flake8, mypy, pylint, pytest.
 
-Certifique-se de que as seguintes ferramentas estão instaladas em seu sistema:
+## Testes Automatizados
 
-- **Python 3.x**
-- **Docker e Docker Compose** (para rodar o banco de dados PostgreSQL)
-- **Git** (para clonar o repositório)
+Os testes cobrem repositórios em memória, autenticação JWT, auditorias fiscais e consistência de dados. Executados com `pytest`:
 
-### Passos para Execução
+```bash
+make test
+```
 
-1. **Clone o Repositório**
-   Abra seu terminal e execute:
-   ```bash
-   git clone https://github.com/seu-usuario/OneAPIIRS.git
+Gera cobertura HTML:
+```bash
+make coverage
+```
+Abra em:
+```bash
+xdg-open htmlcov/index.html  # Linux
+open htmlcov/index.html      # macOS
+start htmlcov/index.html     # Windows
+```
+
+## Documentação da API
+
+Acesse:
+- Swagger UI: http://localhost:8000/api/v1/docs
+- ReDoc: http://localhost:8000/api/v1/redoc
+
+## Contribuição
+
+Este projeto é desenvolvido de forma independente. Não há equipe, apenas o código, a visão e a missão de transformar a gestão fiscal digital.
+
+---
+
+✅ Repositório mantido por [@NCRibeiro](https://github.com/NCRibeiro)

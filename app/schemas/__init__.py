@@ -1,58 +1,60 @@
-"""
-Schemas centralizados para validação e serialização de dados do APE.
-Agrupa todos os modelos utilizados na aplicação.
-"""
+# auth
+from app.schemas.auth import Token, TokenData
 
-from .analytics import (AnalyticsSummary, AuditError, AuditErrorList,
-                        MonthlyBreakdown, MonthlyRecord)
-from .audit import AuditReport, AuditSummary, SuspiciousRecord
-from .auth import Token, TokenData
-from .external import BanksResponse, ExternalCheckResult, SupportedBank
-from .legacy import LegacyBatchResponse, LegacyEntry, LegacyResponse
-from .modern import (ModernBatchResponse, ModernCreate, ModernEntry,
-                     ModernRead, ModernResponse)
-from .taxpayer import TaxpayerBatchResponse, TaxpayerCreate, TaxpayerRead
-from .transform import RawCOBOLInput, TransformedResponse
-from .user import RoleEnum, UserCreate, UserInDB, UserRead
+# user
+from app.schemas.user import UserBase, UserCreate, UserRead
+
+# legacy
+from .legacy import (
+    LegacyCreate,
+    LegacyUpdate,
+    LegacyEntry,
+    LegacyResponse,
+    LegacyBatchResponse,
+)
+
+# modern
+from app.schemas.modern import ModernRead, ModernEntry, ModernBatchResponse, ModernResponse, ModernCreate
+
+# analytics
+from app.schemas.analytics import AnalyticsSummary, MonthlyRecord, MonthlyBreakdown
+
+# audit
+from app.schemas.audit import AuditReport, AuditErrorList
+
+# external
+from app.schemas.external import ExternalCheckResult, SupportedBank, BanksResponse
+
+# taxpayer
+from app.schemas.taxpayer import TaxpayerBase, TaxpayerCreate, TaxpayerRead, TaxpayerBatchResponse
+
 
 __all__ = [
-    # Auth
     "Token",
     "TokenData",
-    # Users
+    "UserBase",
     "UserCreate",
     "UserRead",
-    "UserInDB",
-    "RoleEnum",
-    # Taxpayers
-    "TaxpayerCreate",
-    "TaxpayerRead",
-    "TaxpayerBatchResponse",
-    # Legacy
+    "LegacyCreate",
+    "LegacyUpdate",
     "LegacyEntry",
     "LegacyResponse",
     "LegacyBatchResponse",
-    # Modern
-    "ModernEntry",
-    "ModernCreate",
     "ModernRead",
-    "ModernResponse",
+    "ModernEntry",
     "ModernBatchResponse",
-    # Transform
-    "RawCOBOLInput",
-    "TransformedResponse",
-    # External
-    "ExternalCheckResult",
-    "SupportedBank",
-    "BanksResponse",
-    # Analytics
+    "ModernCreate",
+    "ModernResponse",
     "AnalyticsSummary",
     "MonthlyRecord",
     "MonthlyBreakdown",
-    "AuditError",
-    "AuditErrorList",
-    # Audit
-    "SuspiciousRecord",
-    "AuditSummary",
     "AuditReport",
+    "AuditErrorList",
+    "ExternalCheckResult",
+    "SupportedBank",
+    "BanksResponse",
+    "TaxpayerBase",
+    "TaxpayerCreate",
+    "TaxpayerRead",
+    "TaxpayerBatchResponse",
 ]

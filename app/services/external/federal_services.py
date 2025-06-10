@@ -12,26 +12,25 @@ import re
 def validate_cpf_externally(cpf: str) -> bool:
     """
     Simula a verificação de validade de um CPF em sistema federal externo.
+    Retorna True se o CPF parecer válido (formato correto) e for aceito na simulação.
     """
-    cpf_pattern = r"\d{3}\.\d{3}\.\d{3}-\d{2}"
-    if not re.match(cpf_pattern, cpf):
+    pattern = r"^\d{3}\.\d{3}\.\d{3}-\d{2}$"
+    if not re.match(pattern, cpf):
         return False
-    # Maior probabilidade de ser válido
-    return random.choice([True, True, False])
+    return random.choices([True, False], weights=[70, 30])[0]
 
 
 def fetch_income_score(cpf: str) -> int:
     """
-    Retorna um score de renda baseado em uma lógica simulada.
+    Retorna um score de renda entre 0 e 999 com base nos dígitos do CPF.
     """
-    base = sum(int(ch) for ch in re.findall(r"\d", cpf))
-    return base % 1000  # Score entre 0 e 999
+    soma = sum(int(d) for d in re.findall(r"\d", cpf))
+    return soma % 1000
 
 
 def check_debts(cpf: str) -> bool:
     """
-    Verifica se há pendências financeiras ativas para o CPF.
-    Simula 30% de chance de dívida.
+    Simula a existência de dívidas no CPF.
+    Retorna True em aproximadamente 30% dos casos.
     """
-
     return random.random() < 0.3

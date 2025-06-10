@@ -1,18 +1,22 @@
-# app/routers/analytics.py
-
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_current_user, get_db
-from app.schemas.analytics import (AnalyticsSummary, AuditErrorList,
-                                   MonthlyBreakdown)
-from app.services.analytics_service import (generate_summary,
-                                            get_monthly_distribution,
-                                            list_audit_errors)
+from app.db.session import get_db
+from dependencies import get_current_user
+from app.schemas.analytics import (
+    AnalyticsSummary,
+    AuditErrorList,
+    MonthlyBreakdown,
+)
+from app.services.analytics_service import (
+    generate_summary,
+    get_monthly_distribution,
+    list_audit_errors,
+)
 from core.settings import settings
 
 router = APIRouter(
-    prefix=f"{settings.api_prefix}/analytics",
+    prefix=f"{settings.API_PREFIX}/analytics",
     tags=["Analytics"],
     dependencies=[Depends(get_current_user)],
     responses={404: {"description": "Not found"}},
@@ -56,3 +60,6 @@ async def analytics_errors(
 ) -> AuditErrorList:
     """Lista transações marcadas com inconsistência ou falha de auditoria."""
     return await list_audit_errors(db)
+
+
+__all__ = ["router"]

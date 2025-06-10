@@ -1,23 +1,53 @@
-// .vscode/settings.json
-
 {
-  // Adiciona ao path de import a raiz do projeto e os pacotes app/ e core/
+  "python.pythonPath": ".venv/Scripts/python.exe",
+  "python.envFile": "${workspaceFolder}/.env",
   "python.analysis.extraPaths": [
-    ".",     // inclui config_env.py, dependencies.py, run.bat, etc.
-    "app",
-    "core"
+    "${workspaceFolder}",
+    "${workspaceFolder}/app",
+    "${workspaceFolder}/core"
   ],
+  "python.linting.enabled": true,
+  "python.linting.flake8Enabled": true,
+  "python.testing.pytestEnabled": true,
+  "python.testing.unittestEnabled": false,
+  "python.testing.nosetestsEnabled": false,
 
-  // Profundidade para indexação de pacotes (ajuda em subpastas)
-  "python.analysis.packageIndexDepths": {
-    "app": 2,
-    "core": 1
+  "editor.formatOnSave": false,
+
+  "files.associations": {
+    "*.env": "dotenv"
   },
-  "git.ignoreLimitWarning": true,
-  "workbench.editor.autoLockGroups": {
-    "default": true
+
+  "terminal.integrated.shellIntegration.enabled": false,
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "terminal.integrated.profiles.windows": {
+    "PowerShell": {
+      "path": "C:\\Program Files\\PowerShell\\7\\pwsh.exe"
+    }
   },
-  "workbench.editor.alwaysShowEditorActions": true
+
+  // Flutter & Dart
+  "dart.flutterSdkPath": "C:\\flutter",
+  "dart.sdkPath": "C:\\flutter\\bin\\cache\\dart-sdk",
+  "dart.enableSdkFormatter": true,
+  "dart.lineLength": 100,
+  "dart.showTodos": true,
+  "dart.analysisExcludedFolders": [
+    "build/",
+    ".dart_tool/",
+    ".idea/",
+    ".vscode/"
+  ],
+  "dart.previewFlutterUiGuides": true,
+
+  // Linter silencioso (opcional)
+  "dart.analysisServerFolding": true,
+
+  // Extensões a ignorar no sync
+  "settingsSync.ignoredExtensions": [
+    "ms-vscode.cpptools",
+    "Dart-Code.dart-code",
+    "Dart-Code.flutter"
+  ],
+  "C_Cpp.errorSquiggles": "disabled"
 }
-
-  

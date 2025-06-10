@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR" xml:lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta content="IE=Edge" http-equiv="X-UA-Compatible" />
+    <meta name="description" content="OneAPIIRS Flutter Web App" /> 
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+
+    <title>OneAPIIRS</title>
+
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="icons/Icon-192.png" />
+
+    <!-- Apple Touch Icon -->
+    <link rel="apple-touch-icon" href="icons/Icon-192.png" />
+
+    <!-- Flutter web manifest -->
+    <link rel="manifest" href="manifest.json" />
+
+    <!-- Estilo opcional -->
+    <style>
+      html, body {
+        margin: 0;
+        padding: 0;
+        height: 100%;
+        overflow: hidden;
+      }
+      #loading {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100vh;
+        font-family: sans-serif;
+        color: #888;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div id="loading">Carregando OneAPIIRS Web...</div>
+
+    <script src="flutter.js" defer></script>
+    <script>
+      window.addEventListener("load", function () {
+        _flutter.loader.loadEntrypoint({
+          onEntrypointLoaded: function (engineInitializer) {
+            engineInitializer.initializeEngine().then(function (appRunner) {
+              document.getElementById("loading").remove();
+              appRunner.runApp();
+            });
+          },
+        });
+      });
+    </script>
+  </body>
+</html>
