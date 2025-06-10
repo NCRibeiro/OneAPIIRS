@@ -80,3 +80,7 @@ Este projeto é desenvolvido de forma independente. Não há equipe, apenas o c�
 ---
 
 ✅ Repositório mantido por [@NCRibeiro](https://github.com/NCRibeiro)
+
+> **Atenção:** Este projeto é protegido por copyright. Uso comercial ou redistribuição proibidos sem autorização.
+© 2025 Nívea Ribeiro. Todos os direitos reservados.
+
