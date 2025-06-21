@@ -6,7 +6,8 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import JWTError, jwt
 
-from core.settings import settings
+from core.settings import get_settings
+import settings
 
 # ── Logger ───────────────────────────────────────────────────────────
 logger = logging.getLogger("security")
@@ -31,7 +32,7 @@ def decode_jwt_token(token: str) -> Dict[str, Any]:
     """
     try:
         payload: Dict[str, Any] = jwt.decode(
-            token,
+            token, get_settings().SECRET_KEY,
             settings.SECRET_KEY,
             algorithms=[settings.JWT_ALGORITHM],
             audience="oneapiirs",

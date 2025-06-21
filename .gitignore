@@ -5,3 +5,8 @@ venv/
 *.sqlite3
 node_modules/
 .DS_Store
+debug_env.py
+service-account.json
+
+# Ignore GCP service account key
+/credentials/oneapiirs-sa-key.json

@@ -9,8 +9,9 @@ from dash import dcc, html
 from dash.dependencies import Input, Output
 from fpdf import FPDF
 from pandas import DataFrame
-from dash.dcc import send_file
-from dash.dcc import send_data_frame
+
+from dash.dcc import send_file  # type: ignore
+from dash.dcc import send_data_frame  # type: ignore
 
 # --- Inicialização ---
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP])

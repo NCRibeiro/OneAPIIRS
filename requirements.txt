@@ -69,6 +69,13 @@ Jinja2
 itsdangerous
 click
 
+# —— Google Cloud Platform (GCP) ——
+google-cloud-secret-manager
+google-cloud-bigquery
+google-cloud-storage
+google-cloud-pubsub
+google-cloud-logging
+
 # —— Outros ——
 fonttools
 pillow

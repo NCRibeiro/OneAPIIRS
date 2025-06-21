@@ -17,24 +17,92 @@ Modernizar sistemas fiscais através da transformação de dados legados em info
 - 🔐 **Segurança Avançada** com JWT, CSRF, e testes automatizados.
 - ⚖️ **Arquitetura Containerizada** com Docker, PostgreSQL e FastAPI.
 
-## Tecnologias Utilizadas
 
-- FastAPI
-- PostgreSQL
-- Docker / Docker Compose
-- JWT Authentication
-- Plotly Dash
-- Python 3.10+
-- Black, Flake8, Isort, Mypy, Pytest
+## Arquitetura Fullstack
 
-## Como Rodar Localmente
+  1. Backend: FastAPI + PostgreSQL + SQLAlchemy.
 
-### Requisitos
+  2. Front‑end: Flutter para web e mobile.
+
+  3. Orquestração de Contêineres: Docker Compose com serviços isolados.
+
+
+## Infraestrutura na Google Cloud Platform (GCP)
+
+Integração de Serviços
+
+  . Cloud Run: deploy serverless da API.
+
+  . Cloud Build & Container Registry: CI/CD e armazenamento de imagens Docker.
+
+  . BigQuery: data warehouse para análises avançadas.
+
+  . Pub/Sub: pipeline de eventos em tempo real (oneapiirs-events).
+
+  . Cloud Storage: buckets para dados brutos e artefatos (oneapiirs-raw-data).
+
+
+Passo a Passo para o Deploy
+
+  1. Configurar CLI:
+
+    gcloud auth login
+    gcloud config set project $PROJECT_ID
+
+  2. Build e Push da Imagem:
+
+    gcloud builds submit --tag gcr.io/$PROJECT_ID/oneapiirs-api
+
+  3. Deploy no Cloud Run:
+
+    gcloud run deploy oneapiirs-api --image gcr.io/$PROJECT_ID/oneapiirs-api --plataform managed --region us-central1 --allow-unauthenticated --memory 512Mi
+
+  4. Configuração de BigQuery:
+
+    . Criar dataset oneapiirs e tabelas conforme o esquema de dados.
+    . Conceder permissões ao serviço Cloud Run.
+
+  5. Configuração de Pub/Sub:
+
+    . Criar tópico oneapiirs-events.
+    . Subscribes e políticas de acesso.
+
+  6. Configuração de Cloud Storage:
+    . Criar bucket oneapiirs-raw-data.
+    . Definir permissões de leitura/gravação para o serviço.
+
+
+## Tecnologias Utilizadas
+
+  . Linguagens & Frameworks: Python 3.10+, FastAPI, Flutter.
+
+  . Banco de Dados: PostgreSQL, BigQuery.
+
+  . Contêineres: Docker, Docker Compose, Cloud Run.
+
+  . Mensageria: Google Cloud Pub/Sub.
+
+  . Armazenamento: Google Cloud Storage.
+
+  . Visualização: Plotly Dash.
+
+  . Qualidade de Código: Black, Isort, Flake8, Mypy, Pytest.
+
+
+## Executando Localmente
+
+Pré-requisitos
+
 - Python 3.10+
 - Docker e Docker Compose
 - Git
+- Flutter (SDK) instalado
 
-### Execução com Makefile
+
+## Backend
+
+# No diretório raiz
+Execução com Makefile
 
 ```bash
 make up          # Sobe o sistema com validação de estrutura
@@ -43,10 +111,20 @@ make check-quality  # Verifica formatação, tipo, lint e testes
 make sh          # Entra no container da API
 ```
 
+
+## Front‑end Flutter
+
+cd flutter
+flutter pub get
+flutter run -d chrome  # Web
+# ou flutter run        # Mobile
+
+
 ## Scripts Disponíveis
 
 - `scripts/check_estrutura.sh` — Valida se a estrutura do projeto está correta.
 - `scripts/check_quality.sh` — Executa: black, isort, flake8, mypy, pylint, pytest.
+
 
 ## Testes Automatizados
 
@@ -67,11 +145,13 @@ open htmlcov/index.html      # macOS
 start htmlcov/index.html     # Windows
 ```
 
+
 ## Documentação da API
 
 Acesse:
-- Swagger UI: http://localhost:8000/api/v1/docs
-- ReDoc: http://localhost:8000/api/v1/redoc
+- Swagger UI: http://localhost:8080/api/v1/docs
+- ReDoc: http://localhost:8080/api/v1/redoc
+
 
 ## Contribuição
 

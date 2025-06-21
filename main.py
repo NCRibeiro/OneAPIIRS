@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 import time
 from typing import Any, Callable, Awaitable
+import os
 
 from fastapi import Depends, FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
@@ -10,16 +11,15 @@ from fastapi.staticfiles import StaticFiles
 from starlette.status import HTTP_500_INTERNAL_SERVER_ERROR
 
 from app.db import init_db
-from app.routes.api_router import api_router
+from app.routes.api_router import api_router              # <-- Só este!
 from core.logging_config import get_logger
-from core.settings import settings
+from core.settings import settings, get_settings
 from dependencies import get_current_user
 
 # ─── Logger ─────────────────────────────────────
 logger = get_logger("ape-api")
 logger.setLevel(settings.LOG_LEVEL.upper())
-logger.info("Configuração carregada com sucesso.")  # ok
-
+logger.info("Configuração carregada com sucesso.")
 
 # ─── Instância da Aplicação ─────────────────────
 app = FastAPI(
@@ -32,7 +32,15 @@ app = FastAPI(
     debug=settings.DEBUG,
 )
 
-app.mount("/", StaticFiles(directory="static", html=True), name="static")
+# Recarrega configurações atualizadas
+settings = get_settings()
+
+# Montagem de arquivos estáticos em /static (não sobrescreve root)
+app.mount(
+    "/static", StaticFiles(directory="static", html=True), name="static"
+)
+
+# Inclui o roteador principal sob o prefixo da API
 app.include_router(api_router, prefix=settings.API_PREFIX)
 
 
@@ -48,7 +56,9 @@ app.add_middleware(
 
 # ─── Middleware: Tempo de Processamento ─────────
 @app.middleware("http")
-async def add_process_time_header(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+async def add_process_time_header(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     start = time.time()
     response = await call_next(request)
     response.headers["X-Process-Time"] = str(round(time.time() - start, 4))
@@ -57,21 +67,23 @@ async def add_process_time_header(request: Request, call_next: Callable[[Request
 
 # ─── Middleware: Headers de Segurança ───────────
 @app.middleware("http")
-async def add_security_headers(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+async def add_security_headers(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     response = await call_next(request)
-    response.headers.update(
-        {
-            "X-Content-Type-Options": "nosniff",
-            "X-Frame-Options": "DENY",
-            "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
-        }
-    )
+    response.headers.update({
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains",
+    })
     return response
 
 
 # ─── Middleware: CSRF ───────────────────────────
 @app.middleware("http")
-async def csrf_token_validation(request: Request, call_next: Callable[[Request], Awaitable[Response]]) -> Response:
+async def csrf_token_validation(
+    request: Request, call_next: Callable[[Request], Awaitable[Response]]
+) -> Response:
     if request.method in ["POST", "PUT", "DELETE"]:
         token: str | None = request.headers.get("X-CSRF-Token")
         if not token or token != request.cookies.get("csrf_token"):
@@ -83,9 +95,15 @@ async def csrf_token_validation(request: Request, call_next: Callable[[Request],
 
 
 # ─── Healthcheck ────────────────────────────────
-@app.get("/health")
-def health_check() -> dict[str, str]:
+@app.get("/health", tags=["Health"])
+async def health_check() -> dict[str, str]:
     return {"status": "online"}
+
+
+# Rota raiz simples para checks rápidos
+@app.get("/", include_in_schema=False)
+async def root_health() -> dict[str, str]:
+    return {"status": "ok"}
 
 
 # ─── Root Protegido ─────────────────────────────
@@ -145,11 +163,8 @@ async def on_shutdown() -> None:
 
 
 # ─── Execução Local ─────────────────────────────
+
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(
-        "app.main:app",
-        host=settings.HOST,
-        port=settings.PORT,
-        reload=settings.RELOAD,
-    )
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run("main:app", host="0.0.0.0", port=port)

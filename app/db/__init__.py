@@ -26,14 +26,16 @@ from app.models import Base  # noqa: F401
 
 from .session import AsyncSessionLocal, engine, get_db  # noqa: F401
 
+# Alias para clareza
+async_session = AsyncSessionLocal
+
 # Configura o logger para este módulo
 logger = logging.getLogger("app.db")
-if not logger.handlers:
+if not logger.hasHandlers():
     handler = logging.StreamHandler()
-    formatter = logging.Formatter(
+    handler.setFormatter(logging.Formatter(
         "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
-    )
-    handler.setFormatter(formatter)
+    ))
     logger.addHandler(handler)
 logger.setLevel(logging.INFO)
 
@@ -42,6 +44,7 @@ __all__ = [
     "Base",
     "engine",
     "AsyncSessionLocal",
+    "async_session",
     "get_db",
     "init_db",
     "init_db_sync",
@@ -73,9 +76,10 @@ async def init_db(
             logger.info("Tabelas criadas com sucesso")
     except SQLAlchemyError as err:
         logger.error("Erro ao (re)criar tabelas: %s", err)
-
+        raise
     except Exception as exc:
         logger.exception("Falha inesperada na inicialização do DB: %s", exc)
+        raise
 
 
 def init_db_sync(drop: bool = False) -> None:
@@ -85,11 +89,11 @@ def init_db_sync(drop: bool = False) -> None:
     Exemplo:
         python -c "from app.db import init_db_sync; init_db_sync(drop=True)"
     """
-
     try:
         asyncio.run(init_db(drop=drop))
     except Exception:
         logger.critical("init_db_sync falhou")
+        raise
 
 
 def main() -> None:
@@ -106,10 +110,11 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    masked_url = engine.url.render_as_string(hide_password=True)
     logger.info(
         "Iniciando init_db (drop=%s) usando engine %s",  # noqa: E501
         args.drop,
-        engine.url,
+        masked_url,
     )
     try:
         asyncio.run(init_db(drop=args.drop))

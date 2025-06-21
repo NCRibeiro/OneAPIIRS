@@ -4,11 +4,14 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: ape-api:latest
+    image: oneapiirs
     container_name: ape-api
+    environment:
+      - GOOGLE_APPLICATION_CREDENTIALS=/secrets/oneapiirs-sa-key.json
     working_dir: /app
     volumes:
       - .:/app
+      - ./credentials/oneapiirs-sa-key.json:/secrets/oneapiirs-sa-key.json:ro
     depends_on:
       - db
     ports:

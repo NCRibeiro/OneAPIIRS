@@ -34,7 +34,7 @@ class UserRead(UserBase):
     last_login: Optional[datetime] = Field(None, description="Último acesso do usuário")
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 
 class UserInDB(UserRead):
@@ -57,4 +57,4 @@ class UserResponse(BaseModel):
     created_at: Optional[datetime] = None
 
     class Config:
-        orm_mode = True
+        from_attributes = True
